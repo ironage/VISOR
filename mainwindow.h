@@ -23,6 +23,7 @@ private slots:
     void processFrameAndUpdateGui();
     void openCameraClicked();
     void openImageClicked();
+    void stitchImagesClicked();
 
     
 private:

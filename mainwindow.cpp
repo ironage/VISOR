@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QFileDialog>
+#include <opencv2/opencv.hpp>
+#include <opencv2/stitching/stitcher.hpp>
+
 
 using cv::Mat;
 
@@ -14,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->buttonOpenCamera, SIGNAL(clicked()), this, SLOT(openCameraClicked()));
     connect(ui->buttonOpenImage, SIGNAL(clicked()), this, SLOT(openImageClicked()));
+    connect(ui->stitchButton, SIGNAL(clicked()), this, SLOT(stitchImagesClicked()));
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()),this, SLOT(processFrameAndUpdateGui()));
@@ -49,3 +53,21 @@ void MainWindow::openImageClicked() {
     QString file = QFileDialog::getOpenFileName();
     capWebcam.open(file.toStdString());
 }
+
+void MainWindow::stitchImagesClicked() {
+    capWebcam.release();
+    QStringList names = QFileDialog::getOpenFileNames();
+    std::vector<cv::Mat> inputImages;
+    foreach (QString name, names) {
+        capWebcam.open(name.toStdString());
+        Mat curImage;
+        capWebcam.read(curImage);
+        inputImages.push_back(curImage);
+    }
+    Mat output;
+    cv::Stitcher stitcher = cv::Stitcher::createDefault(false);
+    stitcher.stitch(inputImages, output);
+    capWebcam.read(output);
+}
+
+

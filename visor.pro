@@ -19,4 +19,5 @@ FORMS    += mainwindow.ui
 
 INCLUDEPATH +=  `pkg-config --cflags opencv`
 
-LIBS +=         `pkg-config --libs opencv zbar`
+LIBS += -L/usr/local/lib
+LIBS +=         `pkg-config --libs opencv`
