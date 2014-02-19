@@ -29,7 +29,9 @@ private slots:
 private:
     //For getting frames from camera/video/picture
     cv::VideoCapture capWebcam;
-
+    std::vector<cv::Mat> inputImages;
+    int curIndex;
+    long int counter;
     Ui::MainWindow *ui;
     QTimer* timer;
 
