@@ -166,13 +166,16 @@ void MainWindow::stitchImagesClicked() {
     QStringList names = QFileDialog::getOpenFileNames();
     //Mat output;
 
-
     Mat image1= imread( names.at(0).toStdString() );
     Mat image2= imread( names.at(1).toStdString() );
-
-
     stitchImages(image1, image2 );
 
+    for (int i = 2; i < names.count(); i++ ) {
+        Mat image1 = imread( names.at(i).toStdString() );
+        Mat image2; result.copyTo(image2);
+        stitchImages(image1, image2);
+        printf("Finished iteration %d", i);
+    }
 
     cvtColor(result, result,CV_BGR2RGB);
     QImage qimgOrig((uchar*)result.data, result.cols, result.rows, result.step, QImage::Format_RGB888);
