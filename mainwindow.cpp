@@ -71,9 +71,8 @@ void MainWindow::openImageClicked() {
     inputImages.clear();
 }
 
-void saveImage(std::string &filename) {
-    QImage qimgOrig((uchar*)result.data, result.cols, result.rows, result.step, QImage::Format_RGB888);
-    ui->display->setPixmap(QPixmap::fromImage(qimgOrig));
+void saveImage(cv::Mat &image, const char filename[]) {
+    QImage qimgOrig((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
     qimgOrig.save(filename);
 }
 
@@ -126,7 +125,7 @@ void stitchImages(Mat &image1, Mat &image2 ) {
     std::vector< Point2f > obj;
     std::vector< Point2f > scene;
 
-    for( int i = 0; i < good_matches.size(); i++ ) {
+    for( unsigned i = 0; i < good_matches.size(); i++ ) {
         //-- Get the keypoints from the good matches
         obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
         scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
@@ -137,6 +136,7 @@ void stitchImages(Mat &image1, Mat &image2 ) {
     // Use the Homography Matrix to warp the images
 
     warpPerspective(image1,result,H,cv::Size(image1.cols+image2.cols,image1.rows+image2.rows));
+    saveImage(result, ".png");
     cv::Mat half(result,cv::Rect(0,0,image2.cols,image2.rows));
     image2.copyTo(half);
 
@@ -183,7 +183,7 @@ void MainWindow::stitchImagesClicked() {
     }
 
     cvtColor(result, result,CV_BGR2RGB);
-    saveImage("output.png");
+    saveImage(result, "output.png");
 }
 
 
