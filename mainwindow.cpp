@@ -147,13 +147,14 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
 
     warpPerspective(objImage,result,H,cv::Size(paddedScene.cols,paddedScene.rows));
     saveImage(result, "resultBefore.png");
-    cv::Mat sceneDest(result,cv::Rect(0,0,paddedScene.cols,paddedScene.rows));
+    cv::Mat sceneDest(paddedScene,cv::Rect(0,0,paddedScene.cols,paddedScene.rows));
     Mat gray;
     // Convert to Grayscale
-    cvtColor( paddedScene, gray, CV_RGB2GRAY );//TODO: BGR2GRAY???
-    cv::Mat mask = paddedScene > 0;
+    cvtColor( result, gray, CV_RGB2GRAY );//TODO: BGR2GRAY???
+    cv::Mat mask = result > 0;
     //cv::findNonZero(gray, mask);
-    paddedScene.copyTo(sceneDest,mask);
+    result.copyTo(sceneDest,mask);
+    result = paddedScene;
     cropBlack(result);
     saveImage(result, "resultAfter.png");
 
@@ -193,8 +194,8 @@ void MainWindow::stitchImagesClicked() {
     QStringList names = QFileDialog::getOpenFileNames();
     //Mat output;
 
-    Mat image1= imread( names.at(0).toStdString() );
-    Mat image2= imread( names.at(1).toStdString() );
+    Mat image1= imread( names.at(1).toStdString() );
+    Mat image2= imread( names.at(0).toStdString() );
     stitchImages(image1, image2 );
 
     for (int i = 2; i < names.count(); i++ ) {
