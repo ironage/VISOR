@@ -116,8 +116,8 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
     double max_dist = 0; double min_dist = 100;
 
     //-- Quick calculation of max and min distances between keypoints
-    for( int i = 0; i < descriptors_object.rows; i++ )
-    { double dist = matches[i].distance;
+    for( int i = 0; i < descriptors_object.rows; i++ ) {
+        double dist = matches[i].distance;
         if( dist < min_dist ) min_dist = dist;
         if( dist > max_dist ) max_dist = dist;
     }
@@ -128,21 +128,19 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
     //-- Use only "good" matches (i.e. whose distance is less than 3*min_dist )
     std::vector< DMatch > good_matches;
 
-    for( int i = 0; i < descriptors_object.rows; i++ )
-    {
-        if( matches[i].distance < 3*min_dist )
-        { good_matches.push_back( matches[i]); }
+    for( int i = 0; i < descriptors_object.rows; i++ ) {
+         if( matches[i].distance < 3*min_dist ) {
+             good_matches.push_back( matches[i]);
+         }
     }
     std::vector< Point2f > obj;
     std::vector< Point2f > scene;
 
-    for( int i = 0; i < good_matches.size(); i++ )
-    {
+    for( unsigned i = 0; i < good_matches.size(); i++ ) {
         //-- Get the keypoints from the good matches
         obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
         scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
     }
-
     // Find the Homography Matrix
     Mat H = findHomography( obj, scene, CV_RANSAC );
     // Use the Homography Matrix to warp the images
@@ -207,9 +205,7 @@ void MainWindow::stitchImagesClicked() {
     }
 
     cvtColor(result, result,CV_BGR2RGB);
-    QImage qimgOrig((uchar*)result.data, result.cols, result.rows, result.step, QImage::Format_RGB888);
-    ui->display->setPixmap(QPixmap::fromImage(qimgOrig));
-    qimgOrig.save("output.png");
+    saveImage(result, "output.png");
 }
 
 
