@@ -81,38 +81,38 @@ void saveImage(Mat &image, QString name) {
 }
 
 cv::Mat result;
-// image1 = mosaic
-// image2 = new image to attach
+// obj is the small image
+// scene is the mosiac
 void stitchImages(Mat &objImage, Mat &sceneImage ) {
 
-    //-- Step 1: Detect the keypoints using SURF Detector
-    int minHessian = 400;
+    // Pad the sceen to have sapce for the new obj
     int padding = std::max(objImage.cols, objImage.rows)/2;
     printf("max padding is %d\n", padding);
     Mat paddedScene;
     copyMakeBorder( sceneImage, paddedScene, padding, padding, padding, padding, BORDER_CONSTANT, 0 );
-    saveImage(paddedScene, "paddedScene.png");
 
+    // Convert imagages to gray scale to be used with openCV's detection features
+    Mat grayObjImage, grayPadded;
+    cvtColor( objImage,    grayObjImage,        CV_RGB2GRAY );//TODO: BGR2GRAY???
+    cvtColor( paddedScene, grayPadded, CV_RGB2GRAY );
+
+    // Detect the keypoints using SURF Detector
+    int minHessian = 400;
     SurfFeatureDetector detector( minHessian );
-
     std::vector< KeyPoint > keypoints_object, keypoints_scene;
+    detector.detect( grayObjImage, keypoints_object );
+    detector.detect( grayPadded,   keypoints_scene );
 
-    detector.detect( objImage, keypoints_object );
-    detector.detect( paddedScene, keypoints_scene );
-
-    //-- Step 2: Calculate descriptors (feature vectors)
+    // Calculate descriptors (feature vectors)
     SurfDescriptorExtractor extractor;
-
     Mat descriptors_object, descriptors_scene;
+    extractor.compute( grayObjImage, keypoints_object, descriptors_object );
+    extractor.compute( grayPadded,   keypoints_scene,  descriptors_scene );
 
-    extractor.compute( objImage, keypoints_object, descriptors_object );
-    extractor.compute( paddedScene, keypoints_scene, descriptors_scene );
-
-    //-- Step 3: Matching descriptor vectors using FLANN matcher
+    // Match descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
     std::vector< DMatch > matches;
     matcher.match( descriptors_object, descriptors_scene, matches );
-
     double max_dist = 0; double min_dist = 100;
 
     //-- Quick calculation of max and min distances between keypoints
@@ -133,9 +133,10 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
              good_matches.push_back( matches[i]);
          }
     }
+
+    // Create a list of the good points in the object & scene
     std::vector< Point2f > obj;
     std::vector< Point2f > scene;
-
     for( unsigned i = 0; i < good_matches.size(); i++ ) {
         //-- Get the keypoints from the good matches
         obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
@@ -143,34 +144,31 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
     }
     // Find the Homography Matrix
     Mat H = findHomography( obj, scene, CV_RANSAC );
-    // Use the Homography Matrix to warp the images
 
+    // Use the Homography Matrix to warp the images
     warpPerspective(objImage,result,H,cv::Size(paddedScene.cols,paddedScene.rows));
-    saveImage(result, "resultBefore.png");
-    cv::Mat sceneDest(paddedScene,cv::Rect(0,0,paddedScene.cols,paddedScene.rows));
-    Mat gray;
-    // Convert to Grayscale
-    cvtColor( result, gray, CV_RGB2GRAY );//TODO: BGR2GRAY???
+    // result now contains the rotated/skewed/translated object image
+    // warpedObjDest is now a reference into the paddedScene where we are going to place the object
+    cv::Mat warpedObjDest(paddedScene,cv::Rect(0,0,paddedScene.cols,paddedScene.rows));
+    // Find the non zero parts of the warped image
     cv::Mat mask = result > 0;
-    //cv::findNonZero(gray, mask);
-    result.copyTo(sceneDest,mask);
+    result.copyTo(warpedObjDest,mask);
+    // copy that on top of the scene
     result = paddedScene;
     cropBlack(result);
     saveImage(result, "resultAfter.png");
-
 }
 
 void cropBlack(cv::Mat &imageToCrop) {
+
+    Mat grayImageToCrop;
+    cvtColor( imageToCrop, grayImageToCrop, CV_RGB2GRAY );//TODO: BGR2GRAY???
+
     //crop the black part of the image
     cv::Mat mask;
     vector<vector<Point> > contours; //no c++ 11 rabble rabble
 
-    //need grey image to remove black box
-    Mat gray_imageToCrop;
-    // Convert to Grayscale
-    cvtColor( imageToCrop, gray_imageToCrop, CV_RGB2GRAY );
-
-    threshold(gray_imageToCrop, mask, 1.0, 255.0, CHAIN_APPROX_SIMPLE);
+    threshold(grayImageToCrop, mask, 1.0, 255.0, CHAIN_APPROX_SIMPLE);
     findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
     double maxContourArea = 0.0;
@@ -184,29 +182,38 @@ void cropBlack(cv::Mat &imageToCrop) {
     }
 
     cv::Rect boundingBox = boundingRect(contours[maxContourIndex]);
-    std::cout << "before crop size: " << sizeof(imageToCrop) << "\n";
     imageToCrop = imageToCrop(boundingBox);
-    std::cout << "after crop size: " << sizeof(imageToCrop) << "\n";
 }
 
+const double SCALE_FACTOR = 0.5;
 void MainWindow::stitchImagesClicked() {
 
     QStringList names = QFileDialog::getOpenFileNames();
     //Mat output;
 
-    Mat image1= imread( names.at(1).toStdString() );
-    Mat image2= imread( names.at(0).toStdString() );
-    stitchImages(image1, image2 );
+    Mat object = imread( names.at(1).toStdString() );
+    Mat scene  = imread( names.at(0).toStdString() );
+    Mat smallObject, smallScene;
+    cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+    cv::resize(scene,  smallScene,  Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+    stitchImages(smallObject, smallScene );
 
     for (int i = 2; i < names.count(); i++ ) {
-        Mat scene; result.copyTo(scene);
         Mat object = imread( names.at(i).toStdString() );
-        stitchImages(object, scene);
+        Mat smallObject;
+        cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+        Mat scene; result.copyTo(scene);
+        stitchImages(smallObject, scene);
         printf("Finished iteration %d", i);
     }
 
-    cvtColor(result, result,CV_BGR2RGB);
     saveImage(result, "output.png");
 }
+
+
+
+
+
+
 
 
