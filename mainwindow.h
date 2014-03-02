@@ -24,6 +24,7 @@ private slots:
     void openCameraClicked();
     void openImageClicked();
     void stitchImagesClicked();
+    void detectButtonClicked();
     
 private:
     //For getting frames from camera/video/picture

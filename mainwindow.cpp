@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->buttonOpenCamera, SIGNAL(clicked()), this, SLOT(openCameraClicked()));
     connect(ui->buttonOpenImage, SIGNAL(clicked()), this, SLOT(openImageClicked()));
     connect(ui->stitchButton, SIGNAL(clicked()), this, SLOT(stitchImagesClicked()));
+    connect(ui->detectButton, SIGNAL(clicked()), this, SLOT(detectButtonClicked()));
 
     timer = new QTimer(this);
    // connect(timer, SIGNAL(timeout()),this, SLOT(processFrameAndUpdateGui()));
@@ -204,12 +205,51 @@ void MainWindow::stitchImagesClicked() {
         cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
         Mat scene; result.copyTo(scene);
         stitchImages(smallObject, scene);
-        printf("Finished iteration %d", i);
+        printf("Finished I.S. iteration %d", i);
     }
 
     saveImage(result, "output.png");
 }
 
+// O.R. code starts
+void detectObjects(cv::Mat &inputImage){
+
+    saveImage(inputImage, "inputImage.jpg");
+
+    // Convert to Grayscale
+    cv::Mat grayImage;
+    cv::cvtColor(inputImage, grayImage, CV_RGB2GRAY);
+
+
+    // Canny Edge Detector
+    cv::Mat bwImage;
+    cv::Canny(grayImage, bwImage, 150, 200);
+    saveImage(bwImage, "cannyImage.png");
+
+    //
+
+}
+
+void MainWindow::detectButtonClicked(){
+    QStringList names = QFileDialog::getOpenFileNames();
+
+    for (int i = 0; i < names.count(); i++ ) {
+        Mat object = imread( names.at(i).toStdString() );
+
+        std::cout << names.at(i).toStdString() << std::endl;
+        saveImage(object, "fullImageInLoop.jpg");
+
+        Mat resizedImage;
+        cv::resize(object, resizedImage, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+
+        saveImage(resizedImage, "resizedImageInLoop.jpg");
+
+        detectObjects(resizedImage);
+        printf("Finished O.R. iteration %d", i);
+    }
+
+
+}
 
 
 
