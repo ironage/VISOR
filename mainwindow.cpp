@@ -95,8 +95,8 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
 
     // Convert imagages to gray scale to be used with openCV's detection features
     Mat grayObjImage, grayPadded;
-    cvtColor( objImage,    grayObjImage,        CV_RGB2GRAY );//TODO: BGR2GRAY???
-    cvtColor( paddedScene, grayPadded, CV_RGB2GRAY );
+    cvtColor( objImage,    grayObjImage, CV_BGR2GRAY );
+    cvtColor( paddedScene, grayPadded, CV_BGR2GRAY );
 
     // only look at last image for stitching
     if (roi.height != 0) {
@@ -196,7 +196,7 @@ cv::Rect findBoundingBox(cv::Mat &inputImage, bool inputGrayScale) {
     Mat imageToFindBoundingBoxOn;
 
     if (!inputGrayScale) {
-        cvtColor( inputImage, imageToFindBoundingBoxOn, CV_RGB2GRAY );//TODO: BGR2GRAY???
+        cvtColor( inputImage, imageToFindBoundingBoxOn, CV_BGR2GRAY );
     } else {
         imageToFindBoundingBoxOn = inputImage;
     }
@@ -221,7 +221,7 @@ cv::Rect findBoundingBox(cv::Mat &inputImage, bool inputGrayScale) {
     return boundingRect(contours[maxContourIndex]);
 }
 
-const double SCALE_FACTOR = 0.9;
+const double SCALE_FACTOR = 0.5;
 void MainWindow::stitchImagesClicked() {
 
     QStringList names = QFileDialog::getOpenFileNames();
@@ -253,15 +253,17 @@ void detectObjects(cv::Mat &inputImage){
 
     // Convert to Grayscale
     cv::Mat grayImage;
-    cv::cvtColor(inputImage, grayImage, CV_RGB2GRAY);
+    cv::cvtColor(inputImage, grayImage, CV_BGR2GRAY);
 
 
     // Canny Edge Detector
     cv::Mat bwImage;
     cv::Canny(grayImage, bwImage, 150, 200);
-    saveImage(bwImage, "cannyImage.png");
 
-    //
+    cv::Mat edges;
+    inputImage.copyTo(edges, bwImage);  // bwImage is our mask
+
+    saveImage(edges, "cannyImage.png");
 
 }
 
