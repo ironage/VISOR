@@ -11,7 +11,7 @@
 
 using cv::Mat;
 using namespace cv;
-void cropBlack(Mat &imageToCrop);
+cv::Rect findBoundingBox(Mat &imageToCrop, bool inputGrayScale=false);
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -81,6 +81,7 @@ void saveImage(Mat &image, QString name) {
 }
 
 cv::Mat result;
+cv::Rect roi = cv::Rect(0, 0, 0, 0);
 // obj is the small image
 // scene is the mosiac
 void stitchImages(Mat &objImage, Mat &sceneImage ) {
@@ -96,18 +97,31 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
     cvtColor( objImage,    grayObjImage,        CV_RGB2GRAY );//TODO: BGR2GRAY???
     cvtColor( paddedScene, grayPadded, CV_RGB2GRAY );
 
+    // only look at last image for stitching
+    if (roi.height != 0) {
+        roi.x += padding;
+        roi.y += padding;
+
+        //cv::rectangle(paddedScene, roi, Scalar(255, 0, 0), 3, CV_AA);
+        //saveImage(paddedScene, "ROIshifted.png");
+        std::cout << " ROI " << std::endl << roi << std::endl;
+    } else {
+        roi = cv::Rect(0, 0, grayPadded.cols, grayPadded.rows); // If not set then use the whole image.
+    }
+    Mat roiPointer = grayPadded(roi);
+
     // Detect the keypoints using SURF Detector
     int minHessian = 400;
     SurfFeatureDetector detector( minHessian );
     std::vector< KeyPoint > keypoints_object, keypoints_scene;
     detector.detect( grayObjImage, keypoints_object );
-    detector.detect( grayPadded,   keypoints_scene );
+    detector.detect( roiPointer,   keypoints_scene );
 
     // Calculate descriptors (feature vectors)
     SurfDescriptorExtractor extractor;
     Mat descriptors_object, descriptors_scene;
     extractor.compute( grayObjImage, keypoints_object, descriptors_object );
-    extractor.compute( grayPadded,   keypoints_scene,  descriptors_scene );
+    extractor.compute( roiPointer,   keypoints_scene,  descriptors_scene );
 
     // Match descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
@@ -134,6 +148,8 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
          }
     }
 
+    std::cout << "Found " << good_matches.size() << " goo matches" << std::endl;
+
     // Create a list of the good points in the object & scene
     std::vector< Point2f > obj;
     std::vector< Point2f > scene;
@@ -145,30 +161,50 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
     // Find the Homography Matrix
     Mat H = findHomography( obj, scene, CV_RANSAC );
 
+    std::cout << "Homography Mat" << std::endl << H << std::endl;
+
     // Use the Homography Matrix to warp the images
+    H.row(0).col(2) += roi.x;   // Add roi offset coordinates to translation component
+    H.row(1).col(2) += roi.y;
     warpPerspective(objImage,result,H,cv::Size(paddedScene.cols,paddedScene.rows));
     // result now contains the rotated/skewed/translated object image
+    // this is our ROI on the next step
+    roi = findBoundingBox(result);
+
+    //cv::rectangle(result, roi, Scalar(255, 255, 255), 3, CV_AA);
+    //saveImage(result, "ROI.png");
+
     // warpedObjDest is now a reference into the paddedScene where we are going to place the object
-    cv::Mat warpedObjDest(paddedScene,cv::Rect(0,0,paddedScene.cols,paddedScene.rows));
+    //cv::Mat warpedObjDest(paddedScene,cv::Rect(0,0,paddedScene.cols,paddedScene.rows));
     // Find the non zero parts of the warped image
     cv::Mat mask = result > 0;
-    result.copyTo(warpedObjDest,mask);
+    result.copyTo(paddedScene,mask);
     // copy that on top of the scene
     result = paddedScene;
-    cropBlack(result);
+    cv::Rect crop = findBoundingBox(result);
+    roi.x -= crop.x;
+    roi.y -= crop.y;
+    result = result(crop);
+    std::cout << "result total: " << result.total() << "\n";
     saveImage(result, "resultAfter.png");
 }
 
-void cropBlack(cv::Mat &imageToCrop) {
+// Used to crop and to find region of interest
+cv::Rect findBoundingBox(cv::Mat &inputImage, bool inputGrayScale) {
 
-    Mat grayImageToCrop;
-    cvtColor( imageToCrop, grayImageToCrop, CV_RGB2GRAY );//TODO: BGR2GRAY???
+    Mat imageToFindBoundingBoxOn;
+
+    if (!inputGrayScale) {
+        cvtColor( inputImage, imageToFindBoundingBoxOn, CV_RGB2GRAY );//TODO: BGR2GRAY???
+    } else {
+        imageToFindBoundingBoxOn = inputImage;
+    }
 
     //crop the black part of the image
     cv::Mat mask;
     vector<vector<Point> > contours; //no c++ 11 rabble rabble
 
-    threshold(grayImageToCrop, mask, 1.0, 255.0, CHAIN_APPROX_SIMPLE);
+    threshold(imageToFindBoundingBoxOn, mask, 1.0, 255.0, CHAIN_APPROX_SIMPLE);
     findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
     double maxContourArea = 0.0;
@@ -181,11 +217,10 @@ void cropBlack(cv::Mat &imageToCrop) {
         }
     }
 
-    cv::Rect boundingBox = boundingRect(contours[maxContourIndex]);
-    imageToCrop = imageToCrop(boundingBox);
+    return boundingRect(contours[maxContourIndex]);
 }
 
-const double SCALE_FACTOR = 0.5;
+const double SCALE_FACTOR = 0.9;
 void MainWindow::stitchImagesClicked() {
 
     QStringList names = QFileDialog::getOpenFileNames();
@@ -204,7 +239,7 @@ void MainWindow::stitchImagesClicked() {
         cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
         Mat scene; result.copyTo(scene);
         stitchImages(smallObject, scene);
-        printf("Finished iteration %d", i);
+        printf("Finished iteration %d\n", i);
     }
 
     saveImage(result, "output.png");
