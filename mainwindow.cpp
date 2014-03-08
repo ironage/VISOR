@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <fstream>
+#include <cmath>
 #include <QFileDialog>
 #include <opencv2/opencv.hpp>
 #include <opencv2/stitching/stitcher.hpp>
@@ -107,10 +109,15 @@ void saveImage(Mat &image, QString name) {
 
 cv::Mat result;
 cv::Rect roi = cv::Rect(0, 0, 0, 0);
+const double ROI_SIZE = 1.5;
+const double STD_DEVS_TO_KEEP = 1.5;
 // obj is the small image
 // scene is the mosiac
 void stitchImages(Mat &objImage, Mat &sceneImage ) {
-
+    std::ofstream lengthsFile;
+    std::ofstream anglesFile;
+    lengthsFile.open("lengths.dat", std::ios_base::app);
+    anglesFile.open("angles.dat", std::ios_base::app);
     // Pad the sceen to have sapce for the new obj
     int padding = std::max(objImage.cols, objImage.rows)/2;
     printf("max padding is %d\n", padding);
@@ -127,17 +134,17 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
         roi.x += padding;
         roi.y += padding;
 
-        int extraWidth = roi.width / 2;
-        int extraHeight = roi.height / 2;
+        int extraWidth  = roi.width  / ROI_SIZE;
+        int extraHeight = roi.height / ROI_SIZE;
 
         roi.x -= extraWidth;
         roi.y -= extraHeight;
-        roi.width *= 2;
-        roi.height *= 2;
+        roi.width  = ceil((double)roi.width  * ROI_SIZE);
+        roi.height = ceil((double)roi.height * ROI_SIZE);
 
         if (roi.x < 0) roi.x = 0;
         if (roi.y < 0) roi.y = 0;
-        if (roi.x + roi.width >= paddedScene.cols) roi.width = paddedScene.cols - roi.x;
+        if (roi.x + roi.width  >= paddedScene.cols) roi.width  = paddedScene.cols - roi.x;
         if (roi.y + roi.height >= paddedScene.rows) roi.height = paddedScene.rows - roi.y;
 
         //cv::rectangle(paddedScene, roi, Scalar(255, 0, 0), 3, CV_AA);
@@ -165,25 +172,80 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
     FlannBasedMatcher matcher;
     std::vector< DMatch > matches;
     matcher.match( descriptors_object, descriptors_scene, matches );
-    double max_dist = 0; double min_dist = 100;
 
-    //-- Quick calculation of max and min distances between keypoints
-    for( int i = 0; i < descriptors_object.rows; i++ ) {
-        double dist = matches[i].distance;
-        if( dist < min_dist ) min_dist = dist;
-        if( dist > max_dist ) max_dist = dist;
-    }
-
-    printf("-- Max dist : %f \n", max_dist );
-    printf("-- Min dist : %f \n", min_dist );
-
-    //-- Use only "good" matches (i.e. whose distance is less than 3*min_dist )
+    // Use only "good" matches
+    // find mean and stddev of magnitude
+    // and only take matches within a certain number of stddevs
     std::vector< DMatch > good_matches;
 
-    for( int i = 0; i < descriptors_object.rows; i++ ) {
-         if( matches[i].distance < 3*min_dist ) {
-             good_matches.push_back( matches[i]);
-         }
+    // first find the means
+    double lengthMean = 0.0;
+    double angleMean  = 0.0;
+    std::vector< double > angles;
+    for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
+        lengthMean += (*it).distance;
+
+        double x1 = keypoints_object[(*it).queryIdx].pt.x;
+        double y1 = keypoints_object[(*it).queryIdx].pt.y;
+        double x2 = keypoints_scene [(*it).trainIdx].pt.x;
+        double y2 = keypoints_scene [(*it).trainIdx].pt.y;
+        double angle = atan2(y2-y1,x2-x1);
+        double euDistance = std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
+        std::cout << "distance: " << it->distance << " euDistance " << euDistance << std::endl;
+
+        angles.push_back(angle);
+        angleMean += angle;
+
+        lengthsFile << (*it).distance << std::endl;
+        anglesFile  << angle << std::endl;
+    }
+    lengthMean /= matches.size();
+    angleMean  /= matches.size();
+
+    lengthsFile << "---------------------------------------" << std::endl;
+    anglesFile  << "---------------------------------------" << std::endl;
+
+    // next find the standard deviations
+    double lengthStdDev = 0.0;
+    double angleStdDev  = 0.0;
+    // TODO maybe don't use iterators? it - begin is a bit ugly
+    for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
+        lengthStdDev += ((*it).distance - lengthMean) * ((*it).distance - lengthMean);
+        angleStdDev  += (angles[it - matches.begin()] - angleMean) * (angles[it - matches.begin()] - angleMean);
+    }
+    lengthStdDev /= matches.size();
+    lengthStdDev  = sqrt(lengthStdDev);
+    angleStdDev  /= matches.size();
+    angleStdDev   = sqrt(angleStdDev);
+
+    std::cout << "Length mean = " << lengthMean << " stddev = " << lengthStdDev << std::endl;
+    std::cout << "Angle mean = "  << angleMean  << " stddev = " << angleStdDev  << std::endl;
+
+    // finally prune the matches based off of stddev
+    for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
+        if( (*it).distance > lengthMean + lengthStdDev*STD_DEVS_TO_KEEP ||
+            (*it).distance < lengthMean - lengthStdDev*STD_DEVS_TO_KEEP ) {
+            // length is out of std dev range don't add to list of good values;
+            continue;
+        }
+
+        /*
+        if( angles[it - matches.begin()] > angleMean + angleStdDev*STD_DEVS_TO_KEEP ||
+            angles[it - matches.begin()] < angleMean - angleStdDev*STD_DEVS_TO_KEEP ) {
+            // angle is out of std dev range
+            continue;
+        }
+        */
+
+        if( angles[it - matches.begin()] > angleMean + angleStdDev ||
+            angles[it - matches.begin()] < angleMean - angleStdDev ) {
+            // angle is out of std dev range
+            continue;
+        }
+
+
+        // point passed tests adding to good matches
+        good_matches.push_back(*it);
     }
 
     std::cout << "Found " << good_matches.size() << " goo matches" << std::endl;
@@ -316,7 +378,7 @@ void setLabel(cv::Mat& im, const std::string label, std::vector<cv::Point>& cont
 // draws a blue polygon on and image
 void drawPolygon(cv::Mat& image, std::vector<cv::Point> points){
 
-    for(int i=0; i<points.size(); i++){
+    for(unsigned int i=0; i<points.size(); i++){
         if(i==points.size()-1){
             cv::line(image, points[0],points[points.size()-1], cv::Scalar(255,0,0), 5, 8, 0);
         }
