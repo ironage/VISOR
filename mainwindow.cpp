@@ -267,24 +267,107 @@ void MainWindow::stitchImagesClicked() {
 }
 
 // O.R. code starts
-void detectObjects(cv::Mat &inputImage){
 
-    saveImage(inputImage, "inputImage.jpg");
+void setLabel(cv::Mat& im, const std::string label, std::vector<cv::Point>& contour)
+{
+    int fontface = cv::FONT_HERSHEY_SIMPLEX;
+    double scale = 0.4;
+    int thickness = 1;
+    int baseline = 0;
+
+    cv::Size text = cv::getTextSize(label, fontface, scale, thickness, &baseline);
+    cv::Rect r = cv::boundingRect(contour);
+
+    cv::Point pt(r.x + ((r.width - text.width) / 2), r.y + ((r.height + text.height) / 2));
+    cv::rectangle(im, pt + cv::Point(0, baseline), pt + cv::Point(text.width, -text.height), CV_RGB(255,255,255), CV_FILLED);
+    cv::putText(im, label, pt, fontface, scale, CV_RGB(0,0,0), thickness, 8);
+}
+
+// draws a blue polygon on and image
+void drawPolygon(cv::Mat& image, std::vector<cv::Point> points){
+
+    for(int i=0; i<points.size(); i++){
+        if(i==points.size()-1){
+            cv::line(image, points[0],points[points.size()-1], cv::Scalar(255,0,0), 5, 8, 0);
+        }
+        else{
+            cv::line(image, points[i],points[i+1], cv::Scalar(255,0,0), 3, CV_AA);
+        }
+    }
+}
+
+void detectObjects(cv::Mat &inputImage){
+    saveImage(inputImage, "01_inputImage.jpg");
+
+    // Blur Image
+    cv::Mat blurImage;
+    cv::GaussianBlur(inputImage, blurImage, cv::Size(11,11), 0, 0);
+    saveImage(blurImage, "02_blurImage.jpeg");
 
     // Convert to Grayscale
     cv::Mat grayImage;
-    cv::cvtColor(inputImage, grayImage, CV_BGR2GRAY);
-
+    cv::cvtColor(blurImage, grayImage, CV_BGR2GRAY);
 
     // Canny Edge Detector
     cv::Mat bwImage;
-    cv::Canny(grayImage, bwImage, 150, 200);
+    cv::Canny(grayImage, bwImage, 50, 130);
 
-    cv::Mat edges;
-    inputImage.copyTo(edges, bwImage);  // bwImage is our mask
+    // save Canny Edge Image
+    cv::Mat cannyImage;
+    inputImage.copyTo(cannyImage, bwImage);  // bwImage is our mask
+    saveImage(cannyImage, "03_cannyImage.jpg");
 
-    saveImage(edges, "cannyImage.png");
+    // output image
+    cv::Mat outputImage = inputImage;
+    vector<Vec4i> lines;
+    HoughLinesP(bwImage, lines, 1, CV_PI/180, 120, 5, 60);
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+      Vec4i l = lines[i];
+      line( outputImage, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
+    }
+    saveImage(outputImage, "04_outputImage.jpg");
 
+    /*
+    // Find Contours
+    std::vector<std::vector<cv::Point> > contours;
+    cv::findContours(bwImage.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    std::cout << "I'm here..." << std::endl;
+
+    // approximation polygons
+    std::vector<cv::Point> approxPolygon;
+    cv::Mat outputImage = inputImage;                   // put label is destination image
+    for(int i=0; i<contours.size(); i++){
+        cv::approxPolyDP(cv::Mat(contours[i]), approxPolygon, cv::arcLength(cv::Mat(contours[i]), true)*0.02, true);
+        //cv::approxPolyDP(cv::Mat(contours[i]), approxPolygon, cv::arcLength(cv::Mat(contours[i]), false)*0.00002, false);
+
+        // skip small of non-convex objects
+        if(std::fabs(cv::contourArea(contours[i]))<100 || !cv::isContourConvex(approxPolygon)){
+            continue;
+        }
+        if(approxPolygon.size() == 3){
+            setLabel(outputImage, "TRIANGLE", contours[i]);
+            drawPolygon(outputImage, approxPolygon);
+        }
+        else if(approxPolygon.size() == 4){
+            setLabel(outputImage, "SQUARE", contours[i]);
+            drawPolygon(outputImage, approxPolygon);
+        }
+        else if(approxPolygon.size() == 5){
+            setLabel(outputImage, "PENTAGON", contours[i]);
+            drawPolygon(outputImage, approxPolygon);
+        }
+        else if(approxPolygon.size() == 6){
+            setLabel(outputImage, "HEXAGON", contours[i]);
+            drawPolygon(outputImage, approxPolygon);
+        }
+        else if(approxPolygon.size() > 15){
+            setLabel(outputImage, "CIRCLE", contours[i]);
+            drawPolygon(outputImage, approxPolygon);
+        }
+    }
+    saveImage(outputImage, "outputImage.jpg");
+    */
 }
 
 void MainWindow::detectButtonClicked(){
@@ -292,20 +375,12 @@ void MainWindow::detectButtonClicked(){
 
     for (int i = 0; i < names.count(); i++ ) {
         Mat object = imread( names.at(i).toStdString() );
-
         std::cout << names.at(i).toStdString() << std::endl;
-        saveImage(object, "fullImageInLoop.jpg");
-
         Mat resizedImage;
         cv::resize(object, resizedImage, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
-
-        saveImage(resizedImage, "resizedImageInLoop.jpg");
-
         detectObjects(resizedImage);
         printf("Finished O.R. iteration %d", i);
     }
-
-
 }
 
 
