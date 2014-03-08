@@ -103,6 +103,19 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
         roi.x += padding;
         roi.y += padding;
 
+        int extraWidth = roi.width / 2;
+        int extraHeight = roi.height / 2;
+
+        roi.x -= extraWidth;
+        roi.y -= extraHeight;
+        roi.width *= 2;
+        roi.height *= 2;
+
+        if (roi.x < 0) roi.x = 0;
+        if (roi.y < 0) roi.y = 0;
+        if (roi.x + roi.width >= paddedScene.cols) roi.width = paddedScene.cols - roi.x;
+        if (roi.y + roi.height >= paddedScene.rows) roi.height = paddedScene.rows - roi.y;
+
         //cv::rectangle(paddedScene, roi, Scalar(255, 0, 0), 3, CV_AA);
         //saveImage(paddedScene, "ROIshifted.png");
         std::cout << " ROI " << std::endl << roi << std::endl;
@@ -159,6 +172,13 @@ void stitchImages(Mat &objImage, Mat &sceneImage ) {
         obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
         scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
     }
+
+    Mat img_matches;
+    drawMatches( grayObjImage, keypoints_object, roiPointer, keypoints_scene,
+                 good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+                 vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    saveImage(img_matches, "matches.png");
+
     // Find the Homography Matrix
     Mat H = findHomography( obj, scene, CV_RANSAC );
 
