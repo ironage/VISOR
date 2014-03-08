@@ -1,3 +1,9 @@
 *.o
 visor
 visor.pro.user
+Makefile
+*.ui
+*.jpg
+*.png
+moc_mainwindow.cpp
+ui_mainwindow.h
