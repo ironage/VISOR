@@ -11,9 +11,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    imagestitcher.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    imagestitcher.h
 
 FORMS    += mainwindow.ui
 

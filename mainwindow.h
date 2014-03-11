@@ -6,6 +6,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "imagestitcher.h"
 
 namespace Ui {
 class MainWindow;
@@ -31,9 +32,6 @@ public:
 
 private slots:
     void displayImage(cv::Mat& image);
-    void processFrameAndUpdateGui();
-    void openCameraClicked();
-    void openImageClicked();
     void stitchImagesClicked();
     void detectButtonClicked();
     void gaussianSdChanged(int value);
@@ -42,17 +40,17 @@ private slots:
     void houghVoteChanged(int value);
     void houghMinLengthChanged(int value);
     void houghMinDistanceChanged(int value);
+    void stitchingUpdate(StitchingUpdateData *data);
     
 private:
     void detectObjects(ObjectRecognitionData data);
     //For getting frames from camera/video/picture
     cv::VideoCapture capWebcam;
-    std::vector<cv::Mat> inputImages;
     int curIndex;
     long int counter;
     Ui::MainWindow *ui;
-    QTimer* timer;
     ObjectRecognitionData objectRecognitionData;
+    ImageStitcher* stitcher;
 
 };
 

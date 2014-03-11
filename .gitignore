@@ -7,3 +7,4 @@ Makefile
 *.png
 moc_mainwindow.cpp
 ui_mainwindow.h
+moc_imagestitcher.cpp

@@ -14,32 +14,6 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QPushButton" name="buttonOpenImage">
-    <property name="geometry">
-     <rect>
-      <x>635</x>
-      <y>335</y>
-      <width>98</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Open Image</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="buttonOpenCamera">
-    <property name="geometry">
-     <rect>
-      <x>635</x>
-      <y>295</y>
-      <width>98</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Open Camera</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="display">
     <property name="geometry">
      <rect>
