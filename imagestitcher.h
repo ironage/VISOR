@@ -14,13 +14,15 @@ public:
     StitchingUpdateData();
     cv::Mat currentScene;
     cv::Mat currentFeatureMatches;
+    int curIndex;
+    int totalImages;
 };
 
 class ImageStitcher : public QThread
 {
     Q_OBJECT
 public:
-    explicit ImageStitcher(QStringList inputFiles, QObject *parent = 0);
+    ImageStitcher(QStringList inputFiles, double scaleFactor, QObject *parent = 0);
     
 signals:
     void stitchingUpdate(StitchingUpdateData* data);
@@ -31,6 +33,7 @@ protected:
 
 private:
     QStringList inputFiles;
+    const double SCALE_FACTOR;
 };
 
 Q_DECLARE_METATYPE(StitchingUpdateData*);

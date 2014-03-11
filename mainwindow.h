@@ -23,7 +23,9 @@ public:
 
 private slots:
     void displayImage(cv::Mat& image);
+    void saveCurrentImage();
     void stitchImagesClicked();
+    void startImageStitchingClicked();
     void detectButtonClicked();
     void gaussianSdChanged(int value);
     void cannyLowChanged(int value);
@@ -31,6 +33,8 @@ private slots:
     void houghVoteChanged(int value);
     void houghMinLengthChanged(int value);
     void houghMinDistanceChanged(int value);
+    void IS_scaleChanged(int value);
+    void IS_radioButtonChanged();
     void stitchingUpdate(StitchingUpdateData *data);
     
 private:
@@ -42,6 +46,9 @@ private:
     Ui::MainWindow *ui;
     ObjectRecognizer objectRecognizer;
     ImageStitcher* stitcher;
+    int saveImageCounter;
+    StitchingUpdateData* lastData;
+
 
 };
 

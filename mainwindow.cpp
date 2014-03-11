@@ -18,21 +18,30 @@ using namespace cv;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), stitcher(NULL)
+    ui(new Ui::MainWindow), stitcher(NULL), saveImageCounter(0), lastData(NULL)
 {
     ui->setupUi(this);
+    ui->groupBox->hide();
+    ui->groupBox_IS->hide();
+
     qRegisterMetaType<StitchingUpdateData*>();   // Allows us to use the custom class in signals/slots
 
     ui->display->setScaledContents(true);
 
     connect(ui->stitchButton, SIGNAL(clicked()), this, SLOT(stitchImagesClicked()));
     connect(ui->detectButton, SIGNAL(clicked()), this, SLOT(detectButtonClicked()));
+    connect(ui->button_IS_select, SIGNAL(clicked()), this, SLOT(startImageStitchingClicked()));
+    connect(ui->saveImageButton, SIGNAL(clicked()), this, SLOT(saveCurrentImage()));
     connect(ui->slider_gaussian_sd, SIGNAL(valueChanged(int)), this, SLOT(gaussianSdChanged(int)));
     connect(ui->slider_canny_low, SIGNAL(valueChanged(int)), this, SLOT(cannyLowChanged(int)));
     connect(ui->slider_canny_high, SIGNAL(valueChanged(int)), this, SLOT(cannyHighChanged(int)));
     connect(ui->slider_hough_vote, SIGNAL(valueChanged(int)), this, SLOT(houghVoteChanged(int)));
     connect(ui->slider_hough_minLength, SIGNAL(valueChanged(int)), this, SLOT(houghMinLengthChanged(int)));
     connect(ui->slider_hough_minDistance, SIGNAL(valueChanged(int)), this, SLOT(houghMinDistanceChanged(int)));
+    connect(ui->slider_IS_resize, SIGNAL(valueChanged(int)), this, SLOT(IS_scaleChanged(int)));
+    connect(ui->radioButtonMatches, SIGNAL(clicked()), this, SLOT(IS_radioButtonChanged()));
+    connect(ui->radioButtonScene, SIGNAL(clicked()), this, SLOT(IS_radioButtonChanged()));
+
     // set initial values
     ui->label_gaussian_sd->setText(QString::number(ui->slider_gaussian_sd->value()));
     ui->label_canny_low->setText(QString::number(ui->slider_canny_low->value()));
@@ -51,13 +60,25 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    if (lastData) {
+        delete lastData;
+    }
     delete ui;
+}
+
+void MainWindow::saveCurrentImage() {
+    if (ui->display->pixmap() == NULL || ui->display->pixmap()->isNull()) return;
+    QString fileName = QString("save") + QString::number(saveImageCounter) + ".png";
+    saveImageCounter++;
+    ui->display->pixmap()->save(fileName);
+    std::cout << "saved image " << fileName.toStdString() << std::endl;
 }
 
 void MainWindow::displayImage(cv::Mat& image) {
     cvtColor(image, image,CV_BGR2RGB);
     QImage qimgOrig((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
     ui->display->setPixmap(QPixmap::fromImage(qimgOrig));
+    cvtColor(image, image, CV_RGB2BGR);
 }
 
 void saveImage(Mat &image, QString name) {
@@ -67,16 +88,36 @@ void saveImage(Mat &image, QString name) {
     cvtColor(image, image, CV_RGB2BGR);
 }
 
+void MainWindow::IS_scaleChanged(int value) {
+    ui->label_IS_resize->setText(QString::number(value));
+    // value from the slider is read directly when creating the stitcher object
+}
+
+void MainWindow::IS_radioButtonChanged() {
+    if (lastData) {
+        if (ui->radioButtonMatches->isChecked()) {
+            displayImage(lastData->currentFeatureMatches);
+        } else {
+            displayImage(lastData->currentScene);
+        }
+    }
+}
+
 void MainWindow::stitchingUpdate(StitchingUpdateData* data) {
 
     displayImage(data->currentScene);
+    if (data->totalImages > 0) {
+        ui->progressBar->setValue(((double)data->curIndex)/ data->totalImages * 100);
+    }
+    ui->label_IS_progress->setText(QString::number(data->curIndex) + "/" + QString::number(data->totalImages));
     //saveImage(data->currentScene, "resultAfter.png");
-    delete data;
-
+    if (lastData) {
+        delete lastData;
+    }
+    lastData = data;
 }
 
-void MainWindow::stitchImagesClicked() {
-
+void MainWindow::startImageStitchingClicked() {
     QStringList inputFiles = QFileDialog::getOpenFileNames();
     if (inputFiles.size() < 2) return;    // don't crash on one input image
 
@@ -84,12 +125,24 @@ void MainWindow::stitchImagesClicked() {
         stitcher->terminate();    //possibly risky way to terminate an already running stitcher
         delete stitcher;
     }
-    stitcher = new ImageStitcher(inputFiles);
+    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0);
     connect(stitcher, SIGNAL(stitchingUpdate(StitchingUpdateData*)), this, SLOT(stitchingUpdate(StitchingUpdateData*)));
     stitcher->start();
 }
 
+void MainWindow::stitchImagesClicked() {
+    ui->groupBox->hide();
+    ui->groupBox_IS->show();
+    ui->progressBar->setValue(0);
+    ui->display->clear();
+    ui->label_IS_progress->setText("");
+    ui->label_IS_resize->setText(QString::number(ui->slider_IS_resize->value()));
+}
+
 void MainWindow::detectObjects() {
+    ui->groupBox_IS->hide();
+    ui->groupBox->show();
+    ui->display->clear();
     Mat output = objectRecognizer.recognizeObjects();
     displayImage(output);
 }
