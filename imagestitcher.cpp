@@ -48,7 +48,7 @@ void ImageStitcher::run() {
 
 cv::Rect roi = cv::Rect(0, 0, 0, 0);
 const double ROI_SIZE = 1.5;
-const double STD_DEVS_TO_KEEP = 1.5;
+const double STD_DEVS_TO_KEEP = 3;
 // obj is the small image
 // scene is the mosiac
 StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
@@ -118,11 +118,15 @@ StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
     std::vector< DMatch > good_matches;
 
     // first find the means
-    double lengthMean = 0.0;
+    double distanceMean = 0.0;
+    double distanceMin  = 100.0;
     double angleMean  = 0.0;
+    double lengthsMean = 0.0;
     std::vector< double > angles;
+    std::vector< double > lengths;
+
     for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
-        lengthMean += (*it).distance;
+        distanceMean += (*it).distance;
 
         double x1 = keypoints_object[(*it).queryIdx].pt.x;
         double y1 = keypoints_object[(*it).queryIdx].pt.y;
@@ -133,52 +137,59 @@ StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
         //std::cout << "distance: " << it->distance << " euDistance " << euDistance << std::endl;
 
         angles.push_back(angle);
+        lengths.push_back(euDistance);
         angleMean += angle;
+        lengthsMean += euDistance;
 
-        lengthsFile << (*it).distance << std::endl;
-        anglesFile  << angle << std::endl;
+        //lengthsFile << (*it).distance << std::endl;
+        //anglesFile  << angle << std::endl;
+        if( it->distance < distanceMin ) distanceMin = it->distance;
     }
-    lengthMean /= matches.size();
+    distanceMean /= matches.size();
     angleMean  /= matches.size();
+    lengthsMean /= matches.size();
 
     lengthsFile << "---------------------------------------" << std::endl;
     anglesFile  << "---------------------------------------" << std::endl;
 
     // next find the standard deviations
-    double lengthStdDev = 0.0;
+    double distanceStdDev = 0.0;
     double angleStdDev  = 0.0;
+    double lengthsStdDev = 0.0;
+
     // TODO maybe don't use iterators? it - begin is a bit ugly
     for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
-        lengthStdDev += ((*it).distance - lengthMean) * ((*it).distance - lengthMean);
+        distanceStdDev += ((*it).distance - distanceMean) * ((*it).distance - distanceMean);
         angleStdDev  += (angles[it - matches.begin()] - angleMean) * (angles[it - matches.begin()] - angleMean);
+        lengthsStdDev += (lengths[it - matches.begin()] - lengthsMean) * (angles[it - matches.begin()] - lengthsMean);
     }
-    lengthStdDev /= matches.size();
-    lengthStdDev  = sqrt(lengthStdDev);
+    distanceStdDev /= matches.size();
+    distanceStdDev  = sqrt(distanceStdDev);
     angleStdDev  /= matches.size();
     angleStdDev   = sqrt(angleStdDev);
+    lengthsStdDev /= matches.size();
+    lengthsStdDev = sqrt(lengthsStdDev);
 
-    std::cout << "Length mean = " << lengthMean << " stddev = " << lengthStdDev << std::endl;
+    std::cout << "Distance mean = " << distanceMean << " stddev = " << distanceStdDev << std::endl;
     std::cout << "Angle mean = "  << angleMean  << " stddev = " << angleStdDev  << std::endl;
+    std::cout << "Length mean = " << lengthsMean << " stddev = " << lengthsStdDev << std::endl;
 
     // finally prune the matches based off of stddev
     for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
-        if( (*it).distance > lengthMean + lengthStdDev*STD_DEVS_TO_KEEP ||
-            (*it).distance < lengthMean - lengthStdDev*STD_DEVS_TO_KEEP ) {
+        if( (*it).distance > 3*distanceMin) {
             // length is out of std dev range don't add to list of good values;
             continue;
         }
 
-        /*
-        if( angles[it - matches.begin()] > angleMean + angleStdDev*STD_DEVS_TO_KEEP ||
-            angles[it - matches.begin()] < angleMean - angleStdDev*STD_DEVS_TO_KEEP ) {
+        if( angles[it - matches.begin()] > angleMean + angleStdDev*1.5 || //*STD_DEVS_TO_KEEP ||
+            angles[it - matches.begin()] < angleMean - angleStdDev*1.5 ){//*STD_DEVS_TO_KEEP ) {
             // angle is out of std dev range
             continue;
         }
-        */
 
-        if( angles[it - matches.begin()] > angleMean + angleStdDev ||
-            angles[it - matches.begin()] < angleMean - angleStdDev ) {
-            // angle is out of std dev range
+        if ( lengths[it - matches.begin()] > lengthsMean + lengthsStdDev*STD_DEVS_TO_KEEP ||
+             lengths[it - matches.begin()] < lengthsMean - lengthsStdDev*STD_DEVS_TO_KEEP) {
+            // euculidian distance is out of std dev range
             continue;
         }
 
