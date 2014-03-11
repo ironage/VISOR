@@ -20,12 +20,10 @@ StitchingUpdateData::StitchingUpdateData() : QObject(NULL)
 {
 }
 
-ImageStitcher::ImageStitcher(QStringList inputFiles, QObject *parent) :
-     QThread(parent), inputFiles(inputFiles)
+ImageStitcher::ImageStitcher(QStringList inputFiles, double scaleFactor, QObject *parent) :
+    QThread(parent), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor)
 {
 }
-
-const double SCALE_FACTOR = 0.5;
 
 void ImageStitcher::run() {
 
@@ -39,6 +37,8 @@ void ImageStitcher::run() {
         cv::Mat scene; result.copyTo(scene);
         StitchingUpdateData* update = stitchImages(smallObject, scene);
         update->currentScene.copyTo(result);
+        update->curIndex = i + 1;
+        update->totalImages = inputFiles.size();
         emit stitchingUpdate(update);
         printf("Finished I.S. iteration %d\n", i);
     }
