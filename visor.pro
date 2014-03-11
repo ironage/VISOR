@@ -12,10 +12,14 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    imagestitcher.cpp
+    imagestitcher.cpp \
+    objectrecognizer.cpp \
+    sharedfunctions.cpp
 
 HEADERS  += mainwindow.h \
-    imagestitcher.h
+    imagestitcher.h \
+    objectrecognizer.h \
+    sharedfunctions.h
 
 FORMS    += mainwindow.ui
 

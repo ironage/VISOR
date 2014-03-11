@@ -1,4 +1,6 @@
 #include "imagestitcher.h"
+#include "sharedfunctions.h"
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/stitching/stitcher.hpp>
 #include "opencv2/features2d/features2d.hpp"
@@ -13,8 +15,6 @@
 using namespace cv;
 
 StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage);
-cv::Rect findBoundingBox(Mat &imageToCrop, bool inputGrayScale=false);
-
 
 StitchingUpdateData::StitchingUpdateData() : QObject(NULL)
 {
@@ -217,7 +217,7 @@ StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
     warpPerspective(objImage,result,H,cv::Size(paddedScene.cols,paddedScene.rows));
     // result now contains the rotated/skewed/translated object image
     // this is our ROI on the next step
-    roi = findBoundingBox(result);
+    roi = SharedFunctions::findBoundingBox(result);
 
     //cv::rectangle(result, roi, Scalar(255, 255, 255), 3, CV_AA);
     //saveImage(result, "ROI.png");
@@ -229,42 +229,11 @@ StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
     result.copyTo(paddedScene,mask);
     // copy that on top of the scene
     result = paddedScene;
-    cv::Rect crop = findBoundingBox(result);
+    cv::Rect crop = SharedFunctions::findBoundingBox(result);
     roi.x -= crop.x;
     roi.y -= crop.y;
     result = result(crop);
     std::cout << "result total: " << result.total() << "\n";
     result.copyTo(updateData->currentScene);
     return updateData;
-}
-
-// Used to crop and to find region of interest
-cv::Rect findBoundingBox(cv::Mat &inputImage, bool inputGrayScale) {
-
-    Mat imageToFindBoundingBoxOn;
-
-    if (!inputGrayScale) {
-        cvtColor( inputImage, imageToFindBoundingBoxOn, CV_BGR2GRAY );
-    } else {
-        imageToFindBoundingBoxOn = inputImage;
-    }
-
-    //crop the black part of the image
-    cv::Mat mask;
-    vector<vector<Point> > contours; //no c++ 11 rabble rabble
-
-    threshold(imageToFindBoundingBoxOn, mask, 1.0, 255.0, CHAIN_APPROX_SIMPLE);
-    findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-
-    double maxContourArea = 0.0;
-    unsigned maxContourIndex, i;
-    for (i  = 0; i < contours.size(); ++i) {
-        double a = contourArea(contours[i]);
-        if (a > maxContourArea) {
-            maxContourArea  = a;
-            maxContourIndex = i;
-        }
-    }
-
-    return boundingRect(contours[maxContourIndex]);
 }

@@ -7,20 +7,11 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "imagestitcher.h"
+#include "objectrecognizer.h"
 
 namespace Ui {
 class MainWindow;
 }
-
-struct ObjectRecognitionData {
-    cv::Mat image;
-    int gaussianSD;
-    int cannyLow;
-    int cannyHigh;
-    int houghVote;
-    int houghMinLength;
-    int houghMinDistance;
-};
 
 class MainWindow : public QMainWindow
 {
@@ -43,13 +34,13 @@ private slots:
     void stitchingUpdate(StitchingUpdateData *data);
     
 private:
-    void detectObjects(ObjectRecognitionData data);
+    void detectObjects();
     //For getting frames from camera/video/picture
     cv::VideoCapture capWebcam;
     int curIndex;
     long int counter;
     Ui::MainWindow *ui;
-    ObjectRecognitionData objectRecognitionData;
+    ObjectRecognizer objectRecognizer;
     ImageStitcher* stitcher;
 
 };
