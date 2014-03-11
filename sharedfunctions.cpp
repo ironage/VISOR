@@ -1,5 +1,7 @@
 #include "sharedfunctions.h"
 
+#include <QImage>
+
 using namespace cv;
 
 SharedFunctions::SharedFunctions()
@@ -64,4 +66,11 @@ cv::Rect SharedFunctions::findBoundingBox(cv::Mat &inputImage, bool inputGraySca
     }
 
     return boundingRect(contours[maxContourIndex]);
+}
+
+void SharedFunctions::saveImage(Mat &image, QString name) {
+    cvtColor(image, image,CV_BGR2RGB);
+    QImage qimgOrig((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
+    qimgOrig.save(name);
+    cvtColor(image, image, CV_RGB2BGR);
 }

@@ -36,6 +36,7 @@ private slots:
     void IS_scaleChanged(int value);
     void IS_radioButtonChanged();
     void stitchingUpdate(StitchingUpdateData *data);
+    int getGaussianBlurValue();
     
 private:
     void detectObjects();

@@ -43,13 +43,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->radioButtonScene, SIGNAL(clicked()), this, SLOT(IS_radioButtonChanged()));
 
     // set initial values
-    ui->label_gaussian_sd->setText(QString::number(ui->slider_gaussian_sd->value()));
+    ui->label_gaussian_sd->setText(QString::number(getGaussianBlurValue()));
     ui->label_canny_low->setText(QString::number(ui->slider_canny_low->value()));
     ui->label_canny_high->setText(QString::number(ui->slider_canny_high->value()));
     ui->label_hough_vote->setText(QString::number(ui->slider_hough_vote->value()));
     ui->label_hough_minLength->setText(QString::number(ui->slider_hough_minLength->value()));
     ui->label_hough_minDistance->setText(QString::number(ui->slider_hough_minDistance->value()));
-    objectRecognizer.gaussianSD = ui->slider_gaussian_sd->value();
+    objectRecognizer.gaussianSD = getGaussianBlurValue();
     objectRecognizer.cannyLow = ui->slider_canny_low->value();
     objectRecognizer.cannyHigh = ui->slider_canny_high->value();
     objectRecognizer.houghVote = ui->slider_hough_vote->value();
@@ -78,13 +78,6 @@ void MainWindow::displayImage(cv::Mat& image) {
     cvtColor(image, image,CV_BGR2RGB);
     QImage qimgOrig((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
     ui->display->setPixmap(QPixmap::fromImage(qimgOrig));
-    cvtColor(image, image, CV_RGB2BGR);
-}
-
-void saveImage(Mat &image, QString name) {
-    cvtColor(image, image,CV_BGR2RGB);
-    QImage qimgOrig((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
-    qimgOrig.save(name);
     cvtColor(image, image, CV_RGB2BGR);
 }
 
@@ -161,8 +154,14 @@ void MainWindow::detectButtonClicked(){
     }
 }
 
+int MainWindow::getGaussianBlurValue() {
+    int value = ui->slider_gaussian_sd->value();
+    if (value % 2 == 0) ++value;   // always has to be odd
+    return value;
+}
+
 void MainWindow::gaussianSdChanged(int value) {
-    int oddValue = (2 * value) + 1;
+    int oddValue = getGaussianBlurValue();
     ui->label_gaussian_sd->setText(QString::number(oddValue));
     objectRecognizer.gaussianSD = oddValue;
     detectObjects();
