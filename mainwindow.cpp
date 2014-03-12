@@ -26,8 +26,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     qRegisterMetaType<StitchingUpdateData*>();   // Allows us to use the custom class in signals/slots
 
-    ui->display->setScaledContents(true);
-
     connect(ui->stitchButton, SIGNAL(clicked()), this, SLOT(stitchImagesClicked()));
     connect(ui->detectButton, SIGNAL(clicked()), this, SLOT(detectButtonClicked()));
     connect(ui->button_IS_select, SIGNAL(clicked()), this, SLOT(startImageStitchingClicked()));
@@ -67,17 +65,17 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::saveCurrentImage() {
-    if (ui->display->pixmap() == NULL || ui->display->pixmap()->isNull()) return;
+    //if (ui->display->pixmap() == NULL || ui->display->pixmap()->isNull()) return;
     QString fileName = QString("save") + QString::number(saveImageCounter) + ".png";
     saveImageCounter++;
-    ui->display->pixmap()->save(fileName);
+    ui->display->getImage().save(fileName);
     std::cout << "saved image " << fileName.toStdString() << std::endl;
 }
 
 void MainWindow::displayImage(cv::Mat& image) {
     cvtColor(image, image,CV_BGR2RGB);
     QImage qimgOrig((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
-    ui->display->setPixmap(QPixmap::fromImage(qimgOrig));
+    ui->display->setImage(qimgOrig);
     cvtColor(image, image, CV_RGB2BGR);
 }
 
@@ -127,7 +125,7 @@ void MainWindow::stitchImagesClicked() {
     ui->groupBox->hide();
     ui->groupBox_IS->show();
     ui->progressBar->setValue(0);
-    ui->display->clear();
+    ui->display->scene()->clear();
     ui->label_IS_progress->setText("");
     ui->label_IS_resize->setText(QString::number(ui->slider_IS_resize->value()));
 }
@@ -135,7 +133,7 @@ void MainWindow::stitchImagesClicked() {
 void MainWindow::detectObjects() {
     ui->groupBox_IS->hide();
     ui->groupBox->show();
-    ui->display->clear();
+    ui->display->scene()->clear();
     Mat output = objectRecognizer.recognizeObjects();
     displayImage(output);
 }

@@ -14,12 +14,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     imagestitcher.cpp \
     objectrecognizer.cpp \
-    sharedfunctions.cpp
+    sharedfunctions.cpp \
+    customgraphicsview.cpp
 
 HEADERS  += mainwindow.h \
     imagestitcher.h \
     objectrecognizer.h \
-    sharedfunctions.h
+    sharedfunctions.h \
+    customgraphicsview.h
 
 FORMS    += mainwindow.ui
 
