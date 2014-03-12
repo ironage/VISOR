@@ -18,7 +18,7 @@ using namespace cv;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), stitcher(NULL), saveImageCounter(0), lastData(NULL)
+    ui(new Ui::MainWindow), stitcher(NULL), saveImageCounter(0), lastData(NULL), lastResult(NULL)
 {
     ui->setupUi(this);
     ui->groupBox->hide();
@@ -39,6 +39,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->slider_IS_resize, SIGNAL(valueChanged(int)), this, SLOT(IS_scaleChanged(int)));
     connect(ui->radioButtonMatches, SIGNAL(clicked()), this, SLOT(IS_radioButtonChanged()));
     connect(ui->radioButtonScene, SIGNAL(clicked()), this, SLOT(IS_radioButtonChanged()));
+    connect(ui->radio_or_canny, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
+    connect(ui->radio_or_canny2, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
+    connect(ui->radio_or_gaussian, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
+    connect(ui->radio_or_hough, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
+    connect(ui->radio_or_input, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
+    connect(ui->radio_or_output, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
 
     // set initial values
     ui->label_gaussian_sd->setText(QString::number(getGaussianBlurValue()));
@@ -60,6 +66,9 @@ MainWindow::~MainWindow()
 {
     if (lastData) {
         delete lastData;
+    }
+    if (lastResult) {
+        delete lastResult;
     }
     delete ui;
 }
@@ -91,6 +100,25 @@ void MainWindow::IS_radioButtonChanged() {
         } else {
             displayImage(lastData->currentScene);
         }
+    }
+}
+
+void MainWindow::displayRecognitionResult() {
+    if (lastResult == NULL) return;
+    if (ui->radio_or_canny->isChecked()) {
+        displayImage(lastResult->canny);
+    } else if (ui->radio_or_canny2->isChecked()) {
+        displayImage(lastResult->canny2);
+    } else if (ui->radio_or_gaussian->isChecked()) {
+        displayImage(lastResult->gaussianBlur);
+    } else if (ui->radio_or_hough->isChecked()) {
+        displayImage(lastResult->hough);
+    } else if (ui->radio_or_input->isChecked()) {
+        displayImage(lastResult->hough);
+    } else if (ui->radio_or_input->isChecked()) {
+        displayImage(lastResult->input);
+    } else if (ui->radio_or_output->isChecked()) {
+        displayImage(lastResult->output);
     }
 }
 
@@ -135,8 +163,12 @@ void MainWindow::detectObjects() {
     ui->groupBox_IS->hide();
     ui->groupBox->show();
     ui->display->scene()->clear();
-    Mat output = objectRecognizer.recognizeObjects();
-    displayImage(output);
+    RecognizerResults* results = objectRecognizer.recognizeObjects();
+    if (lastResult != NULL) {
+        delete lastResult;
+    }
+    lastResult = results;
+    displayRecognitionResult();
 }
 
 const double OR_SCALE_FACTOR = 0.5;

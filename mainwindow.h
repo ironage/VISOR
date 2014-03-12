@@ -37,6 +37,7 @@ private slots:
     void IS_radioButtonChanged();
     void stitchingUpdate(StitchingUpdateData *data);
     int getGaussianBlurValue();
+    void displayRecognitionResult();
     
 private:
     void detectObjects();
@@ -49,6 +50,7 @@ private:
     ImageStitcher* stitcher;
     int saveImageCounter;
     StitchingUpdateData* lastData;
+    RecognizerResults* lastResult;
 
 
 };

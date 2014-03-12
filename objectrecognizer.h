@@ -2,11 +2,20 @@
 #define OBJECTRECOGNIZER_H
 #include <opencv2/opencv.hpp>
 
+struct RecognizerResults {
+    cv::Mat input;
+    cv::Mat gaussianBlur;
+    cv::Mat canny;
+    cv::Mat hough;
+    cv::Mat canny2;
+    cv::Mat output;
+};
+
 class ObjectRecognizer
 {
 public:
     ObjectRecognizer();
-    cv::Mat recognizeObjects();
+    RecognizerResults* recognizeObjects();
 
     cv::Mat inputImage;
     int gaussianSD;
