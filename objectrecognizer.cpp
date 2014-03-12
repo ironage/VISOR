@@ -13,15 +13,10 @@ ObjectRecognizer::ObjectRecognizer()
 RecognizerResults *ObjectRecognizer::recognizeObjects() {
     RecognizerResults *results = new RecognizerResults();
     if (inputImage.empty()) return results; // otherwise it will crash.
-    //saveImage(inputImage, "01_inputImage.jpg");
     inputImage.copyTo(results->input);
-
-    /// input image size
-    cv::Size imageSize = inputImage.size();
 
     /// Blur Image
     cv::GaussianBlur(inputImage, results->gaussianBlur, cv::Size(gaussianSD, gaussianSD), 0, 0);
-    //saveImage(blurImage, "02_blurImage.jpeg");
 
     /// Convert to Grayscale
     cv::Mat grayImage;
@@ -30,31 +25,51 @@ RecognizerResults *ObjectRecognizer::recognizeObjects() {
     /// Canny Edge Detector
     cv::Mat bwImage;
     cv::Canny(grayImage, bwImage, cannyLow, cannyHigh);
-
-    /// save Canny Edge Image
     inputImage.copyTo(results->canny, bwImage);  // bwImage is our mask
-    //saveImage(cannyImage, "03_cannyImage.jpg");
 
     /// Hough Transform
-    results->hough = Mat(imageSize, CV_8UC3, Scalar(255,255,255));
+    results->hough = Mat(inputImage.size(), CV_8UC3, Scalar(0,0,0));
     vector<Vec4i> lines;
     HoughLinesP(bwImage, lines, 1, CV_PI/180, houghVote, houghMinLength, houghMinDistance);
+
+    /// Draw Lines from Hough Transform on Clean Image
     for( size_t i = 0; i < lines.size(); i++ )
     {
-      Vec4i l = lines[i];
-      line( results->hough, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,0), 3, CV_AA);
+        Vec4i l = lines[i];
+        line(results->hough, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 2, 8, 0);
     }
-    ///saveImage(outputImage, "04_outputImage.jpg");
+    cv::Mat oneChannelHoughImage;
+    cv::cvtColor(results->hough, oneChannelHoughImage, CV_BGR2GRAY);
+/*
+    /// Apply Skeleton Morphological Operator
+    cv::Mat skelImage(inputImage.size(), CV_8UC1, cv::Scalar(0));
+    cv::Mat tempImage(inputImage.size(), CV_8UC1);
+    cv::Mat element = cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3, 3));
+    bool done;
+    do
+    {
+        cv::morphologyEx(results->hough, tempImage, cv::MORPH_OPEN, element);
+        cv::bitwise_not(tempImage, tempImage);
+        cv::bitwise_and(results->hough, tempImage, tempImage);
+        cv::bitwise_or(skelImage, tempImage, skelImage);
+        cv::erode(results->hough, results->hough, element);
 
+        double max;
+        cv::minMaxLoc(results->hough, 0, &max);
+        done = (max == 0);
+    } while (!done);
+    cv::Mat threeChannelSkeletonImage;
+    cv::cvtColor(skelImage, threeChannelSkeletonImage, CV_GRAY2BGR);*/
 
     /// Find Contours
-    cv::Mat contourGrayImage, contourBwImage;                           // prehaps don't need this line
-    cv::cvtColor(results->hough, contourGrayImage, CV_BGR2GRAY);             // prehaps don't need this line
-    cv::Canny(contourGrayImage, contourBwImage,cannyLow, cannyHigh);   // prehaps don't need this line
+    //cv::Mat contourGrayImage;
+    //cv::Mat contourBwImage;                           // prehaps don't need this line
+    //cv::cvtColor(results->hough, contourGrayImage, CV_BGR2GRAY);             // prehaps don't need this line
+    //cv::Canny(results->hough, contourBwImage, 0, 255);   // prehaps don't need this line
+    //cv::Mat cannyImage2;
     std::vector<std::vector<cv::Point> > contours;
-    cv::findContours(contourBwImage.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-
-    inputImage.copyTo(results->canny2, contourBwImage);
+    cv::findContours(oneChannelHoughImage.clone(), contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    inputImage.copyTo(results->canny2, oneChannelHoughImage);
 
     /// Approximation Polygons
     inputImage.copyTo(results->output);
