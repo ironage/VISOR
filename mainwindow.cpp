@@ -116,7 +116,8 @@ void MainWindow::startImageStitchingClicked() {
         stitcher->terminate();    //possibly risky way to terminate an already running stitcher
         delete stitcher;
     }
-    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0);
+    //TODO make these take input instead of just being constant
+    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.5, 1.5, 3, 3, ImageStitcher::SURF, ImageStitcher::FLANN);
     connect(stitcher, SIGNAL(stitchingUpdate(StitchingUpdateData*)), this, SLOT(stitchingUpdate(StitchingUpdateData*)));
     stitcher->start();
 }
