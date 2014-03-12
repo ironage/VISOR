@@ -20,8 +20,12 @@ StitchingUpdateData::StitchingUpdateData() : QObject(NULL)
 {
 }
 
-ImageStitcher::ImageStitcher(QStringList inputFiles, double scaleFactor, QObject *parent) :
-    QThread(parent), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor)
+ImageStitcher::ImageStitcher(QStringList inputFiles,
+                             double scaleFactor, double roiSize, double angleStdDevs, double lenStdDevs, double distMins,
+                             ImageStitcher::FeatureDetector featureDetector, ImageStitcher::FeatcherMatcher featureMatcher,
+                             QObject *parent) :
+    QThread(parent), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor), ROI_SIZE(roiSize), STD_ANGLE_DEVS_TO_KEEP(angleStdDevs),
+    STD_LEN_DEVS_TO_KEEP(lenStdDevs), NUM_MIN_DIST_TO_KEEP(distMins), F_DETECTOR(featureDetector), F_MATCHER(featureMatcher)
 {
 }
 
@@ -36,23 +40,25 @@ void ImageStitcher::run() {
         cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
         cv::Mat scene; result.copyTo(scene);
         StitchingUpdateData* update = stitchImages(smallObject, scene);
+        if( !update->success ) {
+            return;
+        }
         update->currentScene.copyTo(result);
         update->curIndex = i + 1;
         update->totalImages = inputFiles.size();
         emit stitchingUpdate(update);
         printf("Finished I.S. iteration %d\n", i);
     }
-
 }
 
 
 cv::Rect roi = cv::Rect(0, 0, 0, 0);
-const double ROI_SIZE = 1.5;
-const double STD_DEVS_TO_KEEP = 3;
+
 // obj is the small image
 // scene is the mosiac
-StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
+StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage) {
     StitchingUpdateData* updateData = new StitchingUpdateData();
+    updateData->success = true;
     std::ofstream lengthsFile;
     std::ofstream anglesFile;
     lengthsFile.open("lengths.dat", std::ios_base::app);
@@ -94,108 +100,127 @@ StitchingUpdateData* stitchImages(Mat &objImage, Mat &sceneImage) {
     }
     Mat roiPointer = grayPadded(roi);
 
-    // Detect the keypoints using SURF Detector
-    int minHessian = 400;
-    SurfFeatureDetector detector( minHessian );
     std::vector< KeyPoint > keypoints_object, keypoints_scene;
-    detector.detect( grayObjImage, keypoints_object );
-    detector.detect( roiPointer,   keypoints_scene );
-
-    // Calculate descriptors (feature vectors)
-    SurfDescriptorExtractor extractor;
     Mat descriptors_object, descriptors_scene;
-    extractor.compute( grayObjImage, keypoints_object, descriptors_object );
-    extractor.compute( roiPointer,   keypoints_scene,  descriptors_scene );
 
-    // Match descriptor vectors using FLANN matcher
-    FlannBasedMatcher matcher;
+    switch( F_DETECTOR ) {
+        case ImageStitcher::SURF: {
+            // Detect the keypoints using SURF Detector
+            int minHessian = 400;
+            SurfFeatureDetector detector( minHessian );
+            detector.detect( grayObjImage, keypoints_object );
+            detector.detect( roiPointer,   keypoints_scene );
+
+            // Calculate descriptors (feature vectors)
+            SurfDescriptorExtractor extractor;
+            extractor.compute( grayObjImage, keypoints_object, descriptors_object );
+            extractor.compute( roiPointer,   keypoints_scene,  descriptors_scene );
+            break;
+        }
+        case ImageStitcher::ORB: {
+            cv::ORB orb(5000); // max features default is 500
+            orb( grayObjImage, Mat(), keypoints_object, descriptors_object );
+            orb( roiPointer,   Mat(), keypoints_scene,  descriptors_scene );
+            break;
+        }
+    }
+
     std::vector< DMatch > matches;
-    matcher.match( descriptors_object, descriptors_scene, matches );
+    switch( F_MATCHER ) {
+        case ImageStitcher::FLANN: {
+            // Match descriptor vectors using FLANN matcher
+            FlannBasedMatcher matcher;
+            matcher.match( descriptors_object, descriptors_scene, matches );
+            break;
+        }
+        case ImageStitcher::BRUTE_FORCE: {
+            int normType = F_DETECTOR == ImageStitcher::ORB ? NORM_HAMMING : NORM_L2;
+            BFMatcher matcher(normType);
+            matcher.match( descriptors_object, descriptors_scene, matches );
+            break;
+        }
+    }
 
     // Use only "good" matches
     // find mean and stddev of magnitude
     // and only take matches within a certain number of stddevs
     std::vector< DMatch > good_matches;
 
-    // first find the means
-    double distanceMean = 0.0;
+    // first find the means and the minimum openCV heuristic distance
     double distanceMin  = 100.0;
     double angleMean  = 0.0;
     double lengthsMean = 0.0;
     std::vector< double > angles;
     std::vector< double > lengths;
 
-    for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
-        distanceMean += (*it).distance;
+    for( unsigned i = 0; i < matches.size(); i++ ) {
+        // distance is opencv score so best match is the minimum value
+        if( matches[i].distance < distanceMin ) distanceMin = matches[i].distance;
 
-        double x1 = keypoints_object[(*it).queryIdx].pt.x;
-        double y1 = keypoints_object[(*it).queryIdx].pt.y;
-        double x2 = keypoints_scene [(*it).trainIdx].pt.x;
-        double y2 = keypoints_scene [(*it).trainIdx].pt.y;
+        //calculate the angle of the match and store it (to save doing calculation again)
+        double x1 = keypoints_object[matches[i].queryIdx].pt.x;
+        double y1 = keypoints_object[matches[i].queryIdx].pt.y;
+        double x2 = keypoints_scene [matches[i].trainIdx].pt.x;
+        double y2 = keypoints_scene [matches[i].trainIdx].pt.y;
         double angle = atan2(y2-y1,x2-x1);
-        double euDistance = std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
-        //std::cout << "distance: " << it->distance << " euDistance " << euDistance << std::endl;
-
         angles.push_back(angle);
-        lengths.push_back(euDistance);
         angleMean += angle;
+
+        //calculate the euclidian distance between the features
+        double euDistance = std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
+        lengths.push_back(euDistance);
         lengthsMean += euDistance;
 
-        //lengthsFile << (*it).distance << std::endl;
+        //lengthsFile << matches[i].distance << std::endl;
         //anglesFile  << angle << std::endl;
-        if( it->distance < distanceMin ) distanceMin = it->distance;
     }
-    distanceMean /= matches.size();
-    angleMean  /= matches.size();
-    lengthsMean /= matches.size();
+    angleMean    /= matches.size();
+    lengthsMean  /= matches.size();
 
     lengthsFile << "---------------------------------------" << std::endl;
     anglesFile  << "---------------------------------------" << std::endl;
 
     // next find the standard deviations
-    double distanceStdDev = 0.0;
-    double angleStdDev  = 0.0;
-    double lengthsStdDev = 0.0;
+    double angleStdDev    = 0.0;
+    double lengthsStdDev  = 0.0;
 
-    // TODO maybe don't use iterators? it - begin is a bit ugly
-    for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
-        distanceStdDev += ((*it).distance - distanceMean) * ((*it).distance - distanceMean);
-        angleStdDev  += (angles[it - matches.begin()] - angleMean) * (angles[it - matches.begin()] - angleMean);
-        lengthsStdDev += (lengths[it - matches.begin()] - lengthsMean) * (angles[it - matches.begin()] - lengthsMean);
+    for( unsigned i = 0; i < matches.size(); i++ ) {
+        angleStdDev    += (angles[i]           - angleMean)    * (angles[i]           - angleMean);
+        lengthsStdDev  += (lengths[i]          - lengthsMean)  * (angles[i]           - lengthsMean);
     }
-    distanceStdDev /= matches.size();
-    distanceStdDev  = sqrt(distanceStdDev);
-    angleStdDev  /= matches.size();
-    angleStdDev   = sqrt(angleStdDev);
-    lengthsStdDev /= matches.size();
-    lengthsStdDev = sqrt(lengthsStdDev);
+    angleStdDev    /= matches.size();
+    angleStdDev     = sqrt(angleStdDev);
+    lengthsStdDev  /= matches.size();
+    lengthsStdDev   = sqrt(lengthsStdDev);
 
-    std::cout << "Distance mean = " << distanceMean << " stddev = " << distanceStdDev << std::endl;
-    std::cout << "Angle mean = "  << angleMean  << " stddev = " << angleStdDev  << std::endl;
+    std::cout << "Angle mean = "  << angleMean   << " stddev = " << angleStdDev   << std::endl;
     std::cout << "Length mean = " << lengthsMean << " stddev = " << lengthsStdDev << std::endl;
 
     // finally prune the matches based off of stddev
-    for( std::vector< DMatch >::iterator it = matches.begin(); it != matches.end(); it++ ) {
-        if( (*it).distance > 3*distanceMin) {
+    for( unsigned i = 0; i < matches.size(); i++ ) {
+        if( matches[i].distance > NUM_MIN_DIST_TO_KEEP*distanceMin) {
             // length is out of std dev range don't add to list of good values;
             continue;
         }
-
-        if( angles[it - matches.begin()] > angleMean + angleStdDev*1.5 || //*STD_DEVS_TO_KEEP ||
-            angles[it - matches.begin()] < angleMean - angleStdDev*1.5 ){//*STD_DEVS_TO_KEEP ) {
+        if( angles[i] > angleMean + angleStdDev*STD_ANGLE_DEVS_TO_KEEP || //*STD_DEVS_TO_KEEP ||
+            angles[i] < angleMean - angleStdDev*STD_ANGLE_DEVS_TO_KEEP ){//*STD_DEVS_TO_KEEP ) {
             // angle is out of std dev range
             continue;
         }
-
-        if ( lengths[it - matches.begin()] > lengthsMean + lengthsStdDev*STD_DEVS_TO_KEEP ||
-             lengths[it - matches.begin()] < lengthsMean - lengthsStdDev*STD_DEVS_TO_KEEP) {
+        if ( lengths[i] > lengthsMean + lengthsStdDev*STD_LEN_DEVS_TO_KEEP ||
+             lengths[i] < lengthsMean - lengthsStdDev*STD_LEN_DEVS_TO_KEEP) {
             // euculidian distance is out of std dev range
             continue;
         }
-
-
         // point passed tests adding to good matches
-        good_matches.push_back(*it);
+        good_matches.push_back(matches[i]);
+    }
+
+    // need at least 4 matches to do homography
+    if( good_matches.size() < 4 ) {
+        updateData->success = false;
+        std::cout << "Fatal error detector did not find 4 good matches I.S cannot proceed" << std::endl;
+        return updateData;
     }
 
     std::cout << "Found " << good_matches.size() << " goo matches" << std::endl;
