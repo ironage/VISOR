@@ -9,6 +9,7 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
+#include <QImage>
 #include <fstream>
 
 
@@ -75,17 +76,17 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     cvtColor( paddedScene, grayPadded, CV_BGR2GRAY );
 
     // only look at last image for stitching
+
     if (roi.height != 0) {
         roi.x += padding;
         roi.y += padding;
 
-        int extraWidth  = roi.width  / ROI_SIZE;
-        int extraHeight = roi.height / ROI_SIZE;
-
-        roi.x -= extraWidth;
-        roi.y -= extraHeight;
-        roi.width  = ceil((double)roi.width  * ROI_SIZE);
-        roi.height = ceil((double)roi.height * ROI_SIZE);
+        int newWidth = roi.width * ROI_SIZE;
+        roi.x = roi.x - ((newWidth - roi.width) / 2);
+        roi.width = newWidth;
+        int newHeight = roi.height * ROI_SIZE;
+        roi.y = roi.y - ((newHeight - roi.height) / 2);
+        roi.height = newHeight;
 
         if (roi.x < 0) roi.x = 0;
         if (roi.y < 0) roi.y = 0;
@@ -94,7 +95,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
 
         //cv::rectangle(paddedScene, roi, Scalar(255, 0, 0), 3, CV_AA);
         //saveImage(paddedScene, "ROIshifted.png");
-        std::cout << " ROI " << std::endl << roi << std::endl;
+        //std::cout << " ROI " << std::endl << roi << std::endl;
     } else {
         roi = cv::Rect(0, 0, grayPadded.cols, grayPadded.rows); // If not set then use the whole image.
     }
@@ -185,8 +186,8 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     double lengthsStdDev  = 0.0;
 
     for( unsigned i = 0; i < matches.size(); i++ ) {
-        angleStdDev    += (angles[i]           - angleMean)    * (angles[i]           - angleMean);
-        lengthsStdDev  += (lengths[i]          - lengthsMean)  * (angles[i]           - lengthsMean);
+        angleStdDev    += (angles[i]  - angleMean)    * (angles[i]  - angleMean);
+        lengthsStdDev  += (lengths[i] - lengthsMean)  * (lengths[i] - lengthsMean);
     }
     angleStdDev    /= matches.size();
     angleStdDev     = sqrt(angleStdDev);
