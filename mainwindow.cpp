@@ -145,7 +145,7 @@ void MainWindow::startImageStitchingClicked() {
         delete stitcher;
     }
     //TODO make these take input instead of just being constant
-    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.5, 1.5, 3, 3, ImageStitcher::SURF, ImageStitcher::FLANN);
+    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.25, 1, 1.5, 3, ImageStitcher::SURF, ImageStitcher::BRUTE_FORCE);
     connect(stitcher, SIGNAL(stitchingUpdate(StitchingUpdateData*)), this, SLOT(stitchingUpdate(StitchingUpdateData*)));
     stitcher->start();
 }
