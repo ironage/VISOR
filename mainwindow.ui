@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>905</width>
-    <height>591</height>
+    <height>572</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,7 +20,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <widget class="QFrame" name="frame_3">
       <property name="sizePolicy">
@@ -62,151 +62,6 @@
        <property name="frameShadow">
         <enum>QFrame::Raised</enum>
        </property>
-       <widget class="QGroupBox" name="groupBox_IS">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>5</x>
-          <y>0</y>
-          <width>696</width>
-          <height>204</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>Image Stitching</string>
-        </property>
-        <widget class="QRadioButton" name="radioButtonScene">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>35</y>
-           <width>116</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Show Scene</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-        <widget class="QRadioButton" name="radioButtonMatches">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>60</y>
-           <width>136</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Show Matches</string>
-         </property>
-        </widget>
-        <widget class="QSlider" name="slider_IS_resize">
-         <property name="geometry">
-          <rect>
-           <x>165</x>
-           <y>85</y>
-           <width>421</width>
-           <height>29</height>
-          </rect>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>100</number>
-         </property>
-         <property name="sliderPosition">
-          <number>50</number>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_7">
-         <property name="geometry">
-          <rect>
-           <x>25</x>
-           <y>90</y>
-           <width>66</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Resize</string>
-         </property>
-        </widget>
-        <widget class="QProgressBar" name="progressBar">
-         <property name="geometry">
-          <rect>
-           <x>165</x>
-           <y>115</y>
-           <width>421</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="value">
-          <number>0</number>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_8">
-         <property name="geometry">
-          <rect>
-           <x>25</x>
-           <y>120</y>
-           <width>131</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Stitching Progress</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_IS_resize">
-         <property name="geometry">
-          <rect>
-           <x>605</x>
-           <y>90</y>
-           <width>66</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="label_IS_progress">
-         <property name="geometry">
-          <rect>
-           <x>605</x>
-           <y>120</y>
-           <width>66</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="button_IS_select">
-         <property name="geometry">
-          <rect>
-           <x>320</x>
-           <y>45</y>
-           <width>98</width>
-           <height>27</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Start</string>
-         </property>
-        </widget>
-       </widget>
        <widget class="QGroupBox" name="groupBox">
         <property name="geometry">
          <rect>
@@ -720,6 +575,358 @@
          <property name="text">
           <string>Canny</string>
          </property>
+        </widget>
+       </widget>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_IS">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>5</y>
+         <width>691</width>
+         <height>204</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Image Stitching</string>
+       </property>
+       <widget class="QRadioButton" name="radioButtonScene">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>35</y>
+          <width>116</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Show Scene</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="radioButtonMatches">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>60</y>
+          <width>136</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Matches Before</string>
+        </property>
+       </widget>
+       <widget class="QSlider" name="slider_IS_resize">
+        <property name="geometry">
+         <rect>
+          <x>165</x>
+          <y>140</y>
+          <width>421</width>
+          <height>29</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="sliderPosition">
+         <number>50</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_7">
+        <property name="geometry">
+         <rect>
+          <x>25</x>
+          <y>145</y>
+          <width>66</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Resize</string>
+        </property>
+       </widget>
+       <widget class="QProgressBar" name="progressBar">
+        <property name="geometry">
+         <rect>
+          <x>165</x>
+          <y>170</y>
+          <width>421</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_8">
+        <property name="geometry">
+         <rect>
+          <x>25</x>
+          <y>175</y>
+          <width>131</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Stitching Progress</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_IS_resize">
+        <property name="geometry">
+         <rect>
+          <x>605</x>
+          <y>145</y>
+          <width>66</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_IS_progress">
+        <property name="geometry">
+         <rect>
+          <x>605</x>
+          <y>175</y>
+          <width>66</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="button_IS_select">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>115</y>
+          <width>98</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Stitch</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="radio_IS_matchesAfter">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>85</y>
+          <width>126</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Matches After</string>
+        </property>
+       </widget>
+       <widget class="QFrame" name="frame_4">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>15</y>
+          <width>436</width>
+          <height>116</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QSlider" name="slider_IS_angle">
+         <property name="geometry">
+          <rect>
+           <x>70</x>
+           <y>5</y>
+           <width>291</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <property name="minimum">
+          <number>5</number>
+         </property>
+         <property name="maximum">
+          <number>500</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+        <widget class="QSlider" name="slider_IS_length">
+         <property name="geometry">
+          <rect>
+           <x>70</x>
+           <y>30</y>
+           <width>291</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+        <widget class="QSlider" name="slider_IS_heuristic">
+         <property name="geometry">
+          <rect>
+           <x>70</x>
+           <y>55</y>
+           <width>291</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="buttonStitchStep">
+         <property name="geometry">
+          <rect>
+           <x>155</x>
+           <y>80</y>
+           <width>98</width>
+           <height>27</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Step</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_9">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>10</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Angle</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_10">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>35</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Length</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_11">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>60</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Heuristic</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_IS_angle">
+         <property name="geometry">
+          <rect>
+           <x>365</x>
+           <y>10</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_IS_length">
+         <property name="geometry">
+          <rect>
+           <x>365</x>
+           <y>35</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_IS_heuristic">
+         <property name="geometry">
+          <rect>
+           <x>365</x>
+           <y>60</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QFrame" name="frame_5">
+        <property name="geometry">
+         <rect>
+          <x>605</x>
+          <y>25</y>
+          <width>76</width>
+          <height>71</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QWidget" name="">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>5</y>
+           <width>63</width>
+           <height>52</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QRadioButton" name="radio_IS_step">
+            <property name="text">
+             <string>Step</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radio_IS_run">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
       </widget>

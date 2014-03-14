@@ -45,6 +45,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->radio_or_hough, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
     connect(ui->radio_or_input, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
     connect(ui->radio_or_output, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
+    connect(ui->slider_IS_angle, SIGNAL(valueChanged(int)), this, SLOT(stitchingAngleChanged(int)));
+    connect(ui->slider_IS_heuristic, SIGNAL(valueChanged(int)), this, SLOT(stitchingHeuristicChanged(int)));
+    connect(ui->slider_IS_length, SIGNAL(valueChanged(int)), this, SLOT(stitchingDistanceChanged(int)));
+    connect(ui->buttonStitchStep, SIGNAL(clicked()), this, SLOT(stitchingStepClicked()));
 
     // set initial values
     ui->label_gaussian_sd->setText(QString::number(getGaussianBlurValue()));
@@ -120,6 +124,25 @@ void MainWindow::displayRecognitionResult() {
     } else if (ui->radio_or_output->isChecked()) {
         displayImage(lastResult->output);
     }
+}
+
+void MainWindow::stitchingAngleChanged(int value)
+{
+    //0.1 to 5 std default 1
+}
+
+void MainWindow::stitchingDistanceChanged(int value)
+{
+
+}
+
+void MainWindow::stitchingHeuristicChanged(int value)
+{
+    //1 to 5
+}
+
+void MainWindow::stitchingStepClicked()
+{
 }
 
 void MainWindow::stitchingUpdate(StitchingUpdateData* data) {
