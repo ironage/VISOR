@@ -56,6 +56,9 @@ void CustomGraphicsView::setImage(QImage &image)
         Qt::KeepAspectRatio, Qt::SmoothTransformation));
     fitInView(QRectF(0, 0, width, height),
                             Qt::KeepAspectRatio);
+    if (scene() != NULL) {
+        delete scene();
+    }
     setScene(viewScene);
     currentZoom = 1.0;
 
