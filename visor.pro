@@ -15,13 +15,15 @@ SOURCES += main.cpp\
     imagestitcher.cpp \
     objectrecognizer.cpp \
     sharedfunctions.cpp \
-    customgraphicsview.cpp
+    customgraphicsview.cpp \
+    customslider.cpp
 
 HEADERS  += mainwindow.h \
     imagestitcher.h \
     objectrecognizer.h \
     sharedfunctions.h \
-    customgraphicsview.h
+    customgraphicsview.h \
+    customslider.h
 
 FORMS    += mainwindow.ui
 

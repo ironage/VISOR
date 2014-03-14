@@ -38,9 +38,9 @@ private slots:
     void stitchingUpdate(StitchingUpdateData *data);
     int getGaussianBlurValue();
     void displayRecognitionResult();
-    void stitchingAngleChanged(int value);
-    void stitchingDistanceChanged(int value);
-    void stitchingHeuristicChanged(int value);
+    void stitchingAngleChanged(double value);
+    void stitchingDistanceChanged(double value);
+    void stitchingHeuristicChanged(double value);
     void stitchingStepClicked();
     
 private:

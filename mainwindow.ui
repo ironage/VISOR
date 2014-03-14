@@ -750,7 +750,7 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <widget class="QSlider" name="slider_IS_angle">
+        <widget class="CustomSlider" name="slider_IS_angle">
          <property name="geometry">
           <rect>
            <x>70</x>
@@ -760,16 +760,16 @@
           </rect>
          </property>
          <property name="minimum">
-          <number>5</number>
+          <number>1</number>
          </property>
          <property name="maximum">
-          <number>500</number>
+          <number>100</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
         </widget>
-        <widget class="QSlider" name="slider_IS_length">
+        <widget class="CustomSlider" name="slider_IS_length">
          <property name="geometry">
           <rect>
            <x>70</x>
@@ -778,11 +778,17 @@
            <height>29</height>
           </rect>
          </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
         </widget>
-        <widget class="QSlider" name="slider_IS_heuristic">
+        <widget class="CustomSlider" name="slider_IS_heuristic">
          <property name="geometry">
           <rect>
            <x>70</x>
@@ -790,6 +796,12 @@
            <width>291</width>
            <height>29</height>
           </rect>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -902,7 +914,7 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <widget class="QWidget" name="">
+        <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
            <x>0</x>
@@ -1055,6 +1067,11 @@
    <class>CustomGraphicsView</class>
    <extends>QGraphicsView</extends>
    <header>customgraphicsview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>CustomSlider</class>
+   <extends>QSlider</extends>
+   <header location="global">customslider.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

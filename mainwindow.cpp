@@ -45,9 +45,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->radio_or_hough, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
     connect(ui->radio_or_input, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
     connect(ui->radio_or_output, SIGNAL(clicked()), this, SLOT(displayRecognitionResult()));
-    connect(ui->slider_IS_angle, SIGNAL(valueChanged(int)), this, SLOT(stitchingAngleChanged(int)));
-    connect(ui->slider_IS_heuristic, SIGNAL(valueChanged(int)), this, SLOT(stitchingHeuristicChanged(int)));
-    connect(ui->slider_IS_length, SIGNAL(valueChanged(int)), this, SLOT(stitchingDistanceChanged(int)));
+    connect(ui->slider_IS_angle, SIGNAL(customValueChanged(double)), this, SLOT(stitchingAngleChanged(double)));
+    connect(ui->slider_IS_heuristic, SIGNAL(customValueChanged(double)), this, SLOT(stitchingHeuristicChanged(double)));
+    connect(ui->slider_IS_length, SIGNAL(customValueChanged(double)), this, SLOT(stitchingDistanceChanged(double)));
     connect(ui->buttonStitchStep, SIGNAL(clicked()), this, SLOT(stitchingStepClicked()));
 
     // set initial values
@@ -63,6 +63,10 @@ MainWindow::MainWindow(QWidget *parent) :
     objectRecognizer.houghVote = ui->slider_hough_vote->value();
     objectRecognizer.houghMinLength = ui->slider_hough_minLength->value();
     objectRecognizer.houghMinDistance = ui->slider_hough_minDistance->value();
+
+    ui->slider_IS_angle->setCustomValues(0.1, 5.0, 1.0);
+    ui->slider_IS_length->setCustomValues(0.1, 5.0, 1.0);
+    ui->slider_IS_heuristic->setCustomValues(1.0, 5.0, 3.0);
 
 }
 
@@ -126,19 +130,19 @@ void MainWindow::displayRecognitionResult() {
     }
 }
 
-void MainWindow::stitchingAngleChanged(int value)
+void MainWindow::stitchingAngleChanged(double value)
 {
-    //0.1 to 5 std default 1
+    ui->label_IS_angle->setText(QString::number(value));
 }
 
-void MainWindow::stitchingDistanceChanged(int value)
+void MainWindow::stitchingDistanceChanged(double value)
 {
-
+    ui->label_IS_length->setText(QString::number(value));
 }
 
-void MainWindow::stitchingHeuristicChanged(int value)
+void MainWindow::stitchingHeuristicChanged(double value)
 {
-    //1 to 5
+    ui->label_IS_heuristic->setText(QString::number(value));
 }
 
 void MainWindow::stitchingStepClicked()

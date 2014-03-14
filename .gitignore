@@ -9,3 +9,4 @@ moc_mainwindow.cpp
 ui_mainwindow.h
 moc_imagestitcher.cpp
 moc_customgraphicsview.cpp
+moc_customslider.cpp
