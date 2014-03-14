@@ -79,7 +79,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::saveCurrentImage() {
     //if (ui->display->pixmap() == NULL || ui->display->pixmap()->isNull()) return;
-    QString fileName = QString("save") + QString::number(saveImageCounter) + ".png";
+    QString fileName = QString("save") + QString::number(saveImageCounter) + ".jpg";
     saveImageCounter++;
     ui->display->getImage().save(fileName);
     std::cout << "saved image " << fileName.toStdString() << std::endl;
