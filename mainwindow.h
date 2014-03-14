@@ -33,6 +33,8 @@ private slots:
     void houghVoteChanged(int value);
     void houghMinLengthChanged(int value);
     void houghMinDistanceChanged(int value);
+    void imageScaleChangedOR(int value);
+    void polyErrorChangedOR(int value);
     void IS_scaleChanged(int value);
     void IS_radioButtonChanged();
     void stitchingUpdate(StitchingUpdateData *data);

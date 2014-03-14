@@ -32,7 +32,7 @@
       <property name="minimumSize">
        <size>
         <width>861</width>
-        <height>200</height>
+        <height>220</height>
        </size>
       </property>
       <property name="frameShape">
@@ -47,7 +47,7 @@
          <x>5</x>
          <y>5</y>
          <width>856</width>
-         <height>206</height>
+         <height>226</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -66,9 +66,9 @@
         <property name="geometry">
          <rect>
           <x>5</x>
-          <y>5</y>
+          <y>-5</y>
           <width>846</width>
-          <height>201</height>
+          <height>221</height>
          </rect>
         </property>
         <property name="title">
@@ -78,7 +78,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>50</y>
+           <y>70</y>
            <width>131</width>
            <height>17</height>
           </rect>
@@ -91,7 +91,7 @@
          <property name="geometry">
           <rect>
            <x>170</x>
-           <y>45</y>
+           <y>65</y>
            <width>446</width>
            <height>29</height>
           </rect>
@@ -133,7 +133,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>80</y>
+           <y>95</y>
            <width>131</width>
            <height>17</height>
           </rect>
@@ -146,7 +146,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>20</y>
+           <y>45</y>
            <width>131</width>
            <height>17</height>
           </rect>
@@ -159,7 +159,7 @@
          <property name="geometry">
           <rect>
            <x>170</x>
-           <y>75</y>
+           <y>90</y>
            <width>446</width>
            <height>29</height>
           </rect>
@@ -201,7 +201,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>110</y>
+           <y>120</y>
            <width>131</width>
            <height>17</height>
           </rect>
@@ -214,7 +214,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>140</y>
+           <y>145</y>
            <width>161</width>
            <height>17</height>
           </rect>
@@ -240,7 +240,7 @@
          <property name="geometry">
           <rect>
            <x>170</x>
-           <y>105</y>
+           <y>115</y>
            <width>446</width>
            <height>29</height>
           </rect>
@@ -282,7 +282,7 @@
          <property name="geometry">
           <rect>
            <x>170</x>
-           <y>135</y>
+           <y>140</y>
            <width>446</width>
            <height>29</height>
           </rect>
@@ -360,7 +360,7 @@
          <property name="geometry">
           <rect>
            <x>170</x>
-           <y>15</y>
+           <y>40</y>
            <width>446</width>
            <height>29</height>
           </rect>
@@ -421,7 +421,7 @@
          <property name="geometry">
           <rect>
            <x>630</x>
-           <y>20</y>
+           <y>45</y>
            <width>66</width>
            <height>17</height>
           </rect>
@@ -434,7 +434,7 @@
          <property name="geometry">
           <rect>
            <x>630</x>
-           <y>50</y>
+           <y>70</y>
            <width>66</width>
            <height>17</height>
           </rect>
@@ -447,7 +447,7 @@
          <property name="geometry">
           <rect>
            <x>630</x>
-           <y>80</y>
+           <y>95</y>
            <width>66</width>
            <height>17</height>
           </rect>
@@ -460,7 +460,7 @@
          <property name="geometry">
           <rect>
            <x>630</x>
-           <y>110</y>
+           <y>120</y>
            <width>66</width>
            <height>17</height>
           </rect>
@@ -473,7 +473,7 @@
          <property name="geometry">
           <rect>
            <x>630</x>
-           <y>140</y>
+           <y>145</y>
            <width>66</width>
            <height>17</height>
           </rect>
@@ -529,12 +529,12 @@
           <rect>
            <x>720</x>
            <y>95</y>
-           <width>116</width>
+           <width>121</width>
            <height>22</height>
           </rect>
          </property>
          <property name="text">
-          <string>Canny 2</string>
+          <string>Contour Map</string>
          </property>
         </widget>
         <widget class="QRadioButton" name="radio_or_gaussian">
@@ -574,6 +574,102 @@
          </property>
          <property name="text">
           <string>Canny</string>
+         </property>
+        </widget>
+        <widget class="QSlider" name="slider_OR_imageScale">
+         <property name="geometry">
+          <rect>
+           <x>170</x>
+           <y>15</y>
+           <width>446</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="value">
+          <number>50</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_12">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>20</y>
+           <width>116</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Image Scale</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_OR_imageScale">
+         <property name="geometry">
+          <rect>
+           <x>630</x>
+           <y>20</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+        <widget class="QSlider" name="slider_OR_polyError">
+         <property name="geometry">
+          <rect>
+           <x>170</x>
+           <y>190</y>
+           <width>446</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <property name="minimum">
+          <number>10</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="value">
+          <number>50</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_13">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>195</y>
+           <width>146</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Polygon Error</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_OR_polyError">
+         <property name="geometry">
+          <rect>
+           <x>630</x>
+           <y>195</y>
+           <width>66</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
          </property>
         </widget>
        </widget>
@@ -964,6 +1060,8 @@
         </widget>
        </widget>
       </widget>
+      <zorder>groupBox_IS</zorder>
+      <zorder>frame</zorder>
      </widget>
     </item>
     <item>

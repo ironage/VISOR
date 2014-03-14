@@ -17,6 +17,7 @@ public:
     ObjectRecognizer();
     RecognizerResults* recognizeObjects();
 
+    cv::Mat fullSizeInputImage;
     cv::Mat inputImage;
     int gaussianSD;
     int cannyLow;
@@ -24,6 +25,8 @@ public:
     int houghVote;
     int houghMinLength;
     int houghMinDistance;
+    double imageScale;
+    double polyDPError;
 
 };
 

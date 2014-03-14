@@ -11,15 +11,15 @@ ObjectRecognizer::ObjectRecognizer()
 
 /*
   TODO:
-  - add bar for polygon error for input on approxPolyDP in GUI for line 71. Range between 0.01 and 0.1.  Put this on bottom.
-  - change "Canny2" to "Contour Map" in GUI
   - Input Image is not displayed properly in GUI. Currently same as Hough Image.. Can remove
-  - Slider for scale of image in GUI. Put this on top
   */
 
 RecognizerResults *ObjectRecognizer::recognizeObjects() {
     RecognizerResults *results = new RecognizerResults();
-    if (inputImage.empty()) return results; // otherwise it will crash.
+    if (fullSizeInputImage.empty()) return results; // otherwise it will crash.
+
+    cv::resize(fullSizeInputImage, inputImage, Size(), imageScale, imageScale, INTER_AREA);
+
     inputImage.copyTo(results->input);
 
     /// Blur Image
@@ -68,7 +68,7 @@ RecognizerResults *ObjectRecognizer::recognizeObjects() {
     inputImage.copyTo(results->output);
     std::vector<cv::Point> approxPolygon;
     for(int i=0; i<contours.size(); i++){
-        cv::approxPolyDP(cv::Mat(contours[i]), approxPolygon, cv::arcLength(cv::Mat(contours[i]), true)*0.05, true);
+        cv::approxPolyDP(cv::Mat(contours[i]), approxPolygon, cv::arcLength(cv::Mat(contours[i]), true)*polyDPError, true);
 
         // skip small or non-convex objects
         if(std::fabs(cv::contourArea(contours[i]))<100 || !cv::isContourConvex(approxPolygon)){

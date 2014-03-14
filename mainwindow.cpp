@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->buttonStitchStep, SIGNAL(clicked()), this, SLOT(stitchingStepClicked()));
     connect(ui->radio_IS_run, SIGNAL(clicked()), this, SLOT(stitchStepRunClicked()));
     connect(ui->radio_IS_step, SIGNAL(clicked()), this, SLOT(stitchStepRunClicked()));
+    connect(ui->slider_OR_imageScale, SIGNAL(valueChanged(int)), this, SLOT(imageScaleChangedOR(int)));
+    connect(ui->slider_OR_polyError, SIGNAL(valueChanged(int)), this, SLOT(polyErrorChangedOR(int)));
 
     // set initial values
     ui->label_gaussian_sd->setText(QString::number(getGaussianBlurValue()));
@@ -61,12 +63,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->label_hough_vote->setText(QString::number(ui->slider_hough_vote->value()));
     ui->label_hough_minLength->setText(QString::number(ui->slider_hough_minLength->value()));
     ui->label_hough_minDistance->setText(QString::number(ui->slider_hough_minDistance->value()));
+    ui->label_OR_polyError->setText(QString::number(ui->slider_OR_polyError->value() / 10.0) + "%");
+    ui->label_OR_imageScale->setText(QString::number(ui->slider_OR_imageScale->value()) + "%");
     objectRecognizer.gaussianSD = getGaussianBlurValue();
     objectRecognizer.cannyLow = ui->slider_canny_low->value();
     objectRecognizer.cannyHigh = ui->slider_canny_high->value();
     objectRecognizer.houghVote = ui->slider_hough_vote->value();
     objectRecognizer.houghMinLength = ui->slider_hough_minLength->value();
     objectRecognizer.houghMinDistance = ui->slider_hough_minDistance->value();
+    objectRecognizer.imageScale = ui->slider_OR_imageScale->value() / 100.0;
+    objectRecognizer.polyDPError = ui->slider_OR_polyError->value() / 1000.0;
 
     ui->slider_IS_angle->setCustomValues(0.1, 5.0, 1.0);
     ui->slider_IS_length->setCustomValues(0.1, 5.0, 1.0);
@@ -255,15 +261,12 @@ void MainWindow::detectObjects() {
     displayRecognitionResult();
 }
 
-const double OR_SCALE_FACTOR = 0.5;
-
 void MainWindow::detectButtonClicked(){
     QStringList names = QFileDialog::getOpenFileNames();
 
     for (int i = 0; i < names.count(); i++ ) {
-        Mat object = imread( names.at(i).toStdString() );
+        objectRecognizer.fullSizeInputImage = imread( names.at(i).toStdString() );
         std::cout << names.at(i).toStdString() << std::endl;
-        cv::resize(object, objectRecognizer.inputImage, Size(), OR_SCALE_FACTOR, OR_SCALE_FACTOR, INTER_AREA);
         detectObjects();
         printf("Finished O.R. iteration %d", i);
     }
@@ -310,7 +313,20 @@ void MainWindow::houghMinDistanceChanged(int value) {
     ui->label_hough_minDistance->setText(QString::number(value));
     objectRecognizer.houghMinDistance = value;
     detectObjects();
+}
 
+void MainWindow::imageScaleChangedOR(int value) {
+    double scaleValue = ((double)value) / 100.0;
+    ui->label_OR_imageScale->setText(QString::number(value) + "%");
+    objectRecognizer.imageScale = scaleValue;
+    detectObjects();
+}
+
+void MainWindow::polyErrorChangedOR(int value) {
+    double error = ((double)value) / 1000.0;
+    ui->label_OR_polyError->setText(QString::number(value / 10.0) + "%");
+    objectRecognizer.polyDPError = error;
+    detectObjects();
 }
 
 
