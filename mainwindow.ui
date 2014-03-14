@@ -593,35 +593,6 @@
        <property name="title">
         <string>Image Stitching</string>
        </property>
-       <widget class="QRadioButton" name="radioButtonScene">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>35</y>
-          <width>116</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Show Scene</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QRadioButton" name="radioButtonMatches">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>60</y>
-          <width>136</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Matches Before</string>
-        </property>
-       </widget>
        <widget class="QSlider" name="slider_IS_resize">
         <property name="geometry">
          <rect>
@@ -647,7 +618,7 @@
        <widget class="QLabel" name="label_7">
         <property name="geometry">
          <rect>
-          <x>25</x>
+          <x>95</x>
           <y>145</y>
           <width>66</width>
           <height>17</height>
@@ -674,7 +645,7 @@
         <property name="geometry">
          <rect>
           <x>25</x>
-          <y>175</y>
+          <y>170</y>
           <width>131</width>
           <height>17</height>
          </rect>
@@ -713,7 +684,7 @@
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>115</y>
+          <y>100</y>
           <width>98</width>
           <height>27</height>
          </rect>
@@ -722,20 +693,10 @@
          <string>Stitch</string>
         </property>
        </widget>
-       <widget class="QRadioButton" name="radio_IS_matchesAfter">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>85</y>
-          <width>126</width>
-          <height>22</height>
-         </rect>
+       <widget class="QFrame" name="frame_IS_step_controls">
+        <property name="enabled">
+         <bool>true</bool>
         </property>
-        <property name="text">
-         <string>Matches After</string>
-        </property>
-       </widget>
-       <widget class="QFrame" name="frame_4">
         <property name="geometry">
          <rect>
           <x>160</x>
@@ -760,10 +721,10 @@
           </rect>
          </property>
          <property name="minimum">
-          <number>1</number>
+          <number>0</number>
          </property>
          <property name="maximum">
-          <number>100</number>
+          <number>500</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -779,10 +740,10 @@
           </rect>
          </property>
          <property name="minimum">
-          <number>1</number>
+          <number>0</number>
          </property>
          <property name="maximum">
-          <number>100</number>
+          <number>500</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -801,7 +762,7 @@
           <number>1</number>
          </property>
          <property name="maximum">
-          <number>100</number>
+          <number>500</number>
          </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -810,7 +771,7 @@
         <widget class="QPushButton" name="buttonStitchStep">
          <property name="geometry">
           <rect>
-           <x>155</x>
+           <x>95</x>
            <y>80</y>
            <width>98</width>
            <height>27</height>
@@ -898,6 +859,19 @@
           <string>TextLabel</string>
          </property>
         </widget>
+        <widget class="QLabel" name="label_IS_numMatches">
+         <property name="geometry">
+          <rect>
+           <x>210</x>
+           <y>85</y>
+           <width>211</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Good Matches: </string>
+         </property>
+        </widget>
        </widget>
        <widget class="QFrame" name="frame_5">
         <property name="geometry">
@@ -936,9 +910,57 @@
             <property name="text">
              <string>Run</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
          </layout>
+        </widget>
+       </widget>
+       <widget class="QFrame" name="frame_IS_showResults">
+        <property name="geometry">
+         <rect>
+          <x>15</x>
+          <y>25</y>
+          <width>131</width>
+          <height>61</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QRadioButton" name="radioButtonScene">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>5</y>
+           <width>116</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Show Result</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radioButtonMatches">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>30</y>
+           <width>136</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Show Matches</string>
+         </property>
         </widget>
        </widget>
       </widget>

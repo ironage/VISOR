@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "sharedfunctions.h"
 #include <fstream>
 #include <cmath>
 #include <QFileDialog>
@@ -25,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->groupBox_IS->hide();
 
     qRegisterMetaType<StitchingUpdateData*>();   // Allows us to use the custom class in signals/slots
+    qRegisterMetaType<StitchingMatchesUpdateData>();
 
     connect(ui->stitchButton, SIGNAL(clicked()), this, SLOT(stitchImagesClicked()));
     connect(ui->detectButton, SIGNAL(clicked()), this, SLOT(detectButtonClicked()));
@@ -49,6 +51,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->slider_IS_heuristic, SIGNAL(customValueChanged(double)), this, SLOT(stitchingHeuristicChanged(double)));
     connect(ui->slider_IS_length, SIGNAL(customValueChanged(double)), this, SLOT(stitchingDistanceChanged(double)));
     connect(ui->buttonStitchStep, SIGNAL(clicked()), this, SLOT(stitchingStepClicked()));
+    connect(ui->radio_IS_run, SIGNAL(clicked()), this, SLOT(stitchStepRunClicked()));
+    connect(ui->radio_IS_step, SIGNAL(clicked()), this, SLOT(stitchStepRunClicked()));
 
     // set initial values
     ui->label_gaussian_sd->setText(QString::number(getGaussianBlurValue()));
@@ -133,20 +137,65 @@ void MainWindow::displayRecognitionResult() {
 void MainWindow::stitchingAngleChanged(double value)
 {
     ui->label_IS_angle->setText(QString::number(value));
+    displayProposedMatches();
 }
 
 void MainWindow::stitchingDistanceChanged(double value)
 {
     ui->label_IS_length->setText(QString::number(value));
+    displayProposedMatches();
 }
 
 void MainWindow::stitchingHeuristicChanged(double value)
 {
     ui->label_IS_heuristic->setText(QString::number(value));
+    displayProposedMatches();
+}
+
+void MainWindow::stitchStepRunClicked() {
+    if (stitcher) {
+        stitcher->setStepMode(ui->radio_IS_step->isChecked());
+    }
 }
 
 void MainWindow::stitchingStepClicked()
 {
+    ui->frame_IS_step_controls->setEnabled(false);
+    ui->frame_IS_showResults->setEnabled(true);
+    ui->progressBar->setEnabled(true);
+    if (stitcher) {
+        double angleParam = ui->slider_IS_angle->getCurrentCustomValue();
+        double lengthParam = ui->slider_IS_length->getCurrentCustomValue();
+        double heuristicParam = ui->slider_IS_heuristic->getCurrentCustomValue();
+        stitcher->nextStep(angleParam, lengthParam, heuristicParam);
+    }
+}
+
+void MainWindow::stitchingMatchesUpdate(StitchingMatchesUpdateData data) {
+    ui->frame_IS_step_controls->setEnabled(true);
+    ui->frame_IS_showResults->setEnabled(false);
+    ui->progressBar->setEnabled(false);
+    currentMatches = data;
+    displayProposedMatches();
+}
+
+void MainWindow::displayProposedMatches() {
+    if (!currentMatches.object.empty() && !currentMatches.scene.empty()) {
+        std::vector<cv::DMatch> goodMatches = ImageStitcher::pruneMatches(currentMatches.matches,
+             currentMatches.objFeatures, currentMatches.sceneFeatures,
+             ui->slider_IS_angle->getCurrentCustomValue(),
+             ui->slider_IS_length->getCurrentCustomValue(),
+             ui->slider_IS_heuristic->getCurrentCustomValue());
+        Mat imgMatches;
+        drawMatches( currentMatches.object, currentMatches.objFeatures,
+                     currentMatches.scene, currentMatches.sceneFeatures,
+                     goodMatches, imgMatches, Scalar(0, 255, 0), Scalar(255, 0, 0),
+                     vector<char>(), DrawMatchesFlags::DEFAULT );
+        cv::Rect crop = SharedFunctions::findBoundingBox(imgMatches);
+        imgMatches = imgMatches(crop);
+        displayImage(imgMatches);
+        ui->label_IS_numMatches->setText(QString("Good Matches: ") + QString::number(goodMatches.size()) + "/" + QString::number(currentMatches.matches.size()));
+    }
 }
 
 void MainWindow::stitchingUpdate(StitchingUpdateData* data) {
@@ -170,10 +219,18 @@ void MainWindow::startImageStitchingClicked() {
     if (stitcher) {
         stitcher->terminate();    //possibly risky way to terminate an already running stitcher
         delete stitcher;
+        ui->progressBar->setEnabled(true);
+        ui->frame_IS_showResults->setEnabled(true);
+        ui->frame_IS_step_controls->setEnabled(false);
     }
     //TODO make these take input instead of just being constant
-    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.25, 1, 1.5, 3, ImageStitcher::SURF, ImageStitcher::BRUTE_FORCE);
-    connect(stitcher, SIGNAL(stitchingUpdate(StitchingUpdateData*)), this, SLOT(stitchingUpdate(StitchingUpdateData*)));
+    double angleParam = ui->slider_IS_angle->getCurrentCustomValue();
+    double lengthParam = ui->slider_IS_length->getCurrentCustomValue();
+    double heuristicParam = ui->slider_IS_heuristic->getCurrentCustomValue();
+    bool stepMode = ui->radio_IS_step->isChecked();
+    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.25, angleParam, lengthParam, heuristicParam, ImageStitcher::SURF, ImageStitcher::BRUTE_FORCE, stepMode);
+    connect(stitcher, SIGNAL(stitchingUpdate(StitchingUpdateData*)), this, SLOT(stitchingUpdate(StitchingUpdateData*)), Qt::QueuedConnection);
+    connect(stitcher, SIGNAL(stitchingUpdateMatches(StitchingMatchesUpdateData)), this, SLOT(stitchingMatchesUpdate(StitchingMatchesUpdateData)));
     stitcher->start();
 }
 

@@ -24,10 +24,42 @@ StitchingUpdateData::StitchingUpdateData() : QObject(NULL)
 ImageStitcher::ImageStitcher(QStringList inputFiles,
                              double scaleFactor, double roiSize, double angleStdDevs, double lenStdDevs, double distMins,
                              ImageStitcher::FeatureDetector featureDetector, ImageStitcher::FeatcherMatcher featureMatcher,
-                             QObject *parent) :
+                             bool stepModeState, QObject *parent) :
     QThread(parent), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor), ROI_SIZE(roiSize), STD_ANGLE_DEVS_TO_KEEP(angleStdDevs),
-    STD_LEN_DEVS_TO_KEEP(lenStdDevs), NUM_MIN_DIST_TO_KEEP(distMins), F_DETECTOR(featureDetector), F_MATCHER(featureMatcher)
+    STD_LEN_DEVS_TO_KEEP(lenStdDevs), NUM_MIN_DIST_TO_KEEP(distMins), F_DETECTOR(featureDetector), F_MATCHER(featureMatcher), stepMode(stepModeState)
 {
+}
+
+void ImageStitcher::nextStep(double angle, double length, double heuristic) {
+    lock.lock();
+    STD_ANGLE_DEVS_TO_KEEP = angle;
+    STD_LEN_DEVS_TO_KEEP = length;
+    NUM_MIN_DIST_TO_KEEP = heuristic;
+    currentlyPaused = false;
+    lock.unlock();
+}
+
+void ImageStitcher::pauseThreadUntilReady() {
+    lock.lock();
+    if (stepMode) {
+        currentlyPaused = true;
+        lock.unlock();
+        while (true) {
+            sleep(1);   // 1 second sleep
+            lock.lock();
+            if (!currentlyPaused) {
+                break;  //look carefully, lock is actually unlocked after...
+            }
+            lock.unlock();
+        }
+    }
+    lock.unlock();
+}
+
+void ImageStitcher::setStepMode(bool inputStepMode) {
+    lock.lock();
+    stepMode = inputStepMode;
+    lock.unlock();
 }
 
 void ImageStitcher::run() {
@@ -52,6 +84,83 @@ void ImageStitcher::run() {
     }
 }
 
+std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& matches,
+            const std::vector<KeyPoint>& keypoints_object, const std::vector<KeyPoint>& keypoints_scene,
+            double angleThreshold, double distanceThreshold, double heuristicThreshold) {
+    // Use only "good" matches
+    // find mean and stddev of magnitude
+    // and only take matches within a certain number of stddevs
+    std::vector< DMatch > good_matches;
+
+    // first find the means and the minimum openCV heuristic distance
+    double distanceMin  = 100.0;
+    double angleMean  = 0.0;
+    double lengthsMean = 0.0;
+    std::vector< double > angles;
+    std::vector< double > lengths;
+
+    for( unsigned i = 0; i < matches.size(); i++ ) {
+        // distance is opencv score so best match is the minimum value
+        if( matches[i].distance < distanceMin ) distanceMin = matches[i].distance;
+
+        //calculate the angle of the match and store it (to save doing calculation again)
+        double x1 = keypoints_object[matches[i].queryIdx].pt.x;
+        double y1 = keypoints_object[matches[i].queryIdx].pt.y;
+        double x2 = keypoints_scene [matches[i].trainIdx].pt.x;
+        double y2 = keypoints_scene [matches[i].trainIdx].pt.y;
+        double angle = atan2(y2-y1,x2-x1);
+        angles.push_back(angle);
+        angleMean += angle;
+
+        //calculate the euclidian distance between the features
+        double euDistance = std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
+        lengths.push_back(euDistance);
+        lengthsMean += euDistance;
+
+        //lengthsFile << matches[i].distance << std::endl;
+        //anglesFile  << angle << std::endl;
+    }
+    angleMean    /= matches.size();
+    lengthsMean  /= matches.size();
+
+    // next find the standard deviations
+    double angleStdDev    = 0.0;
+    double lengthsStdDev  = 0.0;
+
+    for( unsigned i = 0; i < matches.size(); i++ ) {
+        angleStdDev    += (angles[i]  - angleMean)    * (angles[i]  - angleMean);
+        lengthsStdDev  += (lengths[i] - lengthsMean)  * (lengths[i] - lengthsMean);
+    }
+    angleStdDev    /= matches.size();
+    angleStdDev     = sqrt(angleStdDev);
+    lengthsStdDev  /= matches.size();
+    lengthsStdDev   = sqrt(lengthsStdDev);
+
+    std::cout << "Angle mean = "  << angleMean   << " stddev = " << angleStdDev   << std::endl;
+    std::cout << "Length mean = " << lengthsMean << " stddev = " << lengthsStdDev << std::endl;
+
+    // finally prune the matches based off of stddev
+    for( unsigned i = 0; i < matches.size(); i++ ) {
+        if( matches[i].distance > heuristicThreshold*distanceMin) {
+            // length is out of std dev range don't add to list of good values;
+            continue;
+        }
+        if( angles[i] > angleMean + angleStdDev*angleThreshold || //*STD_DEVS_TO_KEEP ||
+            angles[i] < angleMean - angleStdDev*angleThreshold ){//*STD_DEVS_TO_KEEP ) {
+            // angle is out of std dev range
+            continue;
+        }
+        if ( lengths[i] > lengthsMean + lengthsStdDev*distanceThreshold ||
+             lengths[i] < lengthsMean - lengthsStdDev*distanceThreshold) {
+            // euculidian distance is out of std dev range
+            continue;
+        }
+        // point passed tests adding to good matches
+        good_matches.push_back(matches[i]);
+    }
+    return good_matches;
+}
+
 
 cv::Rect roi = cv::Rect(0, 0, 0, 0);
 
@@ -60,10 +169,6 @@ cv::Rect roi = cv::Rect(0, 0, 0, 0);
 StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage) {
     StitchingUpdateData* updateData = new StitchingUpdateData();
     updateData->success = true;
-    std::ofstream lengthsFile;
-    std::ofstream anglesFile;
-    lengthsFile.open("lengths.dat", std::ios_base::app);
-    anglesFile.open("angles.dat", std::ios_base::app);
     // Pad the sceen to have sapce for the new obj
     int padding = std::max(objImage.cols, objImage.rows)/2;
     printf("max padding is %d\n", padding);
@@ -142,80 +247,23 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
         }
     }
 
-    // Use only "good" matches
-    // find mean and stddev of magnitude
-    // and only take matches within a certain number of stddevs
-    std::vector< DMatch > good_matches;
-
-    // first find the means and the minimum openCV heuristic distance
-    double distanceMin  = 100.0;
-    double angleMean  = 0.0;
-    double lengthsMean = 0.0;
-    std::vector< double > angles;
-    std::vector< double > lengths;
-
-    for( unsigned i = 0; i < matches.size(); i++ ) {
-        // distance is opencv score so best match is the minimum value
-        if( matches[i].distance < distanceMin ) distanceMin = matches[i].distance;
-
-        //calculate the angle of the match and store it (to save doing calculation again)
-        double x1 = keypoints_object[matches[i].queryIdx].pt.x;
-        double y1 = keypoints_object[matches[i].queryIdx].pt.y;
-        double x2 = keypoints_scene [matches[i].trainIdx].pt.x;
-        double y2 = keypoints_scene [matches[i].trainIdx].pt.y;
-        double angle = atan2(y2-y1,x2-x1);
-        angles.push_back(angle);
-        angleMean += angle;
-
-        //calculate the euclidian distance between the features
-        double euDistance = std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
-        lengths.push_back(euDistance);
-        lengthsMean += euDistance;
-
-        //lengthsFile << matches[i].distance << std::endl;
-        //anglesFile  << angle << std::endl;
+    lock.lock();
+    if (stepMode) { // only emit if we are in step mode.
+        StitchingMatchesUpdateData matchesUpdate;   //copy everything (no pointers here)
+        grayObjImage.copyTo(matchesUpdate.object);
+        roiPointer.copyTo(matchesUpdate.scene);
+        matchesUpdate.matches = matches;
+        matchesUpdate.objFeatures = keypoints_object;
+        matchesUpdate.sceneFeatures = keypoints_scene;
+        emit stitchingUpdateMatches(matchesUpdate);
     }
-    angleMean    /= matches.size();
-    lengthsMean  /= matches.size();
+    lock.unlock();
 
-    lengthsFile << "---------------------------------------" << std::endl;
-    anglesFile  << "---------------------------------------" << std::endl;
+    //pause here if in step mode
+    pauseThreadUntilReady();
 
-    // next find the standard deviations
-    double angleStdDev    = 0.0;
-    double lengthsStdDev  = 0.0;
-
-    for( unsigned i = 0; i < matches.size(); i++ ) {
-        angleStdDev    += (angles[i]  - angleMean)    * (angles[i]  - angleMean);
-        lengthsStdDev  += (lengths[i] - lengthsMean)  * (lengths[i] - lengthsMean);
-    }
-    angleStdDev    /= matches.size();
-    angleStdDev     = sqrt(angleStdDev);
-    lengthsStdDev  /= matches.size();
-    lengthsStdDev   = sqrt(lengthsStdDev);
-
-    std::cout << "Angle mean = "  << angleMean   << " stddev = " << angleStdDev   << std::endl;
-    std::cout << "Length mean = " << lengthsMean << " stddev = " << lengthsStdDev << std::endl;
-
-    // finally prune the matches based off of stddev
-    for( unsigned i = 0; i < matches.size(); i++ ) {
-        if( matches[i].distance > NUM_MIN_DIST_TO_KEEP*distanceMin) {
-            // length is out of std dev range don't add to list of good values;
-            continue;
-        }
-        if( angles[i] > angleMean + angleStdDev*STD_ANGLE_DEVS_TO_KEEP || //*STD_DEVS_TO_KEEP ||
-            angles[i] < angleMean - angleStdDev*STD_ANGLE_DEVS_TO_KEEP ){//*STD_DEVS_TO_KEEP ) {
-            // angle is out of std dev range
-            continue;
-        }
-        if ( lengths[i] > lengthsMean + lengthsStdDev*STD_LEN_DEVS_TO_KEEP ||
-             lengths[i] < lengthsMean - lengthsStdDev*STD_LEN_DEVS_TO_KEEP) {
-            // euculidian distance is out of std dev range
-            continue;
-        }
-        // point passed tests adding to good matches
-        good_matches.push_back(matches[i]);
-    }
+    std::vector<DMatch> good_matches = pruneMatches(matches, keypoints_object, keypoints_scene,
+                                       STD_ANGLE_DEVS_TO_KEEP, STD_LEN_DEVS_TO_KEEP, NUM_MIN_DIST_TO_KEEP);
 
     // need at least 4 matches to do homography
     if( good_matches.size() < 4 ) {
@@ -224,7 +272,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
         return updateData;
     }
 
-    std::cout << "Found " << good_matches.size() << " goo matches" << std::endl;
+    std::cout << "Found " << good_matches.size() << " good matches" << std::endl;
 
     // Create a list of the good points in the object & scene
     std::vector< Point2f > obj;

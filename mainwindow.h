@@ -42,6 +42,9 @@ private slots:
     void stitchingDistanceChanged(double value);
     void stitchingHeuristicChanged(double value);
     void stitchingStepClicked();
+    void stitchingMatchesUpdate(StitchingMatchesUpdateData data);
+    void displayProposedMatches();
+    void stitchStepRunClicked();
     
 private:
     void detectObjects();
@@ -55,6 +58,7 @@ private:
     int saveImageCounter;
     StitchingUpdateData* lastData;
     RecognizerResults* lastResult;
+    StitchingMatchesUpdateData currentMatches;
 
 
 };
