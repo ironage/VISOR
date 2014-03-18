@@ -16,14 +16,16 @@ SOURCES += main.cpp\
     objectrecognizer.cpp \
     sharedfunctions.cpp \
     customgraphicsview.cpp \
-    customslider.cpp
+    customslider.cpp \
+    metadataparser.cpp
 
 HEADERS  += mainwindow.h \
     imagestitcher.h \
     objectrecognizer.h \
     sharedfunctions.h \
     customgraphicsview.h \
-    customslider.h
+    customslider.h \
+    metadataparser.h
 
 FORMS    += mainwindow.ui
 

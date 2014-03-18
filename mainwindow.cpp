@@ -28,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent) :
     qRegisterMetaType<StitchingUpdateData*>();   // Allows us to use the custom class in signals/slots
     qRegisterMetaType<StitchingMatchesUpdateData>();
 
+    parser.setFileName(QString("metaData.txt"));
+
     connect(ui->stitchButton, SIGNAL(clicked()), this, SLOT(stitchImagesClicked()));
     connect(ui->detectButton, SIGNAL(clicked()), this, SLOT(detectButtonClicked()));
     connect(ui->button_IS_select, SIGNAL(clicked()), this, SLOT(startImageStitchingClicked()));
@@ -55,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->radio_IS_step, SIGNAL(clicked()), this, SLOT(stitchStepRunClicked()));
     connect(ui->slider_OR_imageScale, SIGNAL(valueChanged(int)), this, SLOT(imageScaleChangedOR(int)));
     connect(ui->slider_OR_polyError, SIGNAL(valueChanged(int)), this, SLOT(polyErrorChangedOR(int)));
+    connect(ui->display, SIGNAL(mouseMove(int,int)), this, SLOT(mouseMovedOnDisplay(int, int)));
 
     // set initial values
     ui->label_gaussian_sd->setText(QString::number(getGaussianBlurValue()));
@@ -262,14 +265,10 @@ void MainWindow::detectObjects() {
 }
 
 void MainWindow::detectButtonClicked(){
-    QStringList names = QFileDialog::getOpenFileNames();
-
-    for (int i = 0; i < names.count(); i++ ) {
-        objectRecognizer.fullSizeInputImage = imread( names.at(i).toStdString() );
-        std::cout << names.at(i).toStdString() << std::endl;
-        detectObjects();
-        printf("Finished O.R. iteration %d", i);
-    }
+    QString name = QFileDialog::getOpenFileName();
+    currentORData = parser.searchForImage(name);
+    objectRecognizer.fullSizeInputImage = imread( name.toStdString() );
+    detectObjects();
 }
 
 int MainWindow::getGaussianBlurValue() {
@@ -329,6 +328,12 @@ void MainWindow::polyErrorChangedOR(int value) {
     detectObjects();
 }
 
+void MainWindow::mouseMovedOnDisplay(int x, int y) {
+    if (currentORData.dataIsValid && ui->groupBox->isEnabled()) {
+        ui->label_OR_coords->setText(QString("x: ") + QString::number(x) + "\ny: " + QString::number(y));
+        //TODO: currentORData.data[LAT] + ...
+    }
+}
 
 
 

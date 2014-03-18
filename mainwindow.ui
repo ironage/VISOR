@@ -638,37 +638,22 @@
          <string>TextLabel</string>
         </property>
        </widget>
-       <zorder>label</zorder>
-       <zorder>slider_canny_low</zorder>
-       <zorder>label_2</zorder>
-       <zorder>label_3</zorder>
-       <zorder>slider_canny_high</zorder>
-       <zorder>label_4</zorder>
-       <zorder>label_5</zorder>
-       <zorder>label_6</zorder>
-       <zorder>slider_hough_vote</zorder>
-       <zorder>slider_hough_minLength</zorder>
-       <zorder>slider_hough_minDistance</zorder>
-       <zorder>slider_gaussian_sd</zorder>
-       <zorder>label_gaussian_sd</zorder>
-       <zorder>label_canny_low</zorder>
-       <zorder>label_canny_high</zorder>
-       <zorder>label_hough_vote</zorder>
-       <zorder>label_hough_minLength</zorder>
-       <zorder>label_hough_minDistance</zorder>
-       <zorder>radio_or_output</zorder>
-       <zorder>radio_or_input</zorder>
-       <zorder>radio_or_canny2</zorder>
-       <zorder>radio_or_gaussian</zorder>
-       <zorder>radio_or_hough</zorder>
-       <zorder>radio_or_canny</zorder>
-       <zorder>slider_OR_imageScale</zorder>
-       <zorder>label_12</zorder>
-       <zorder>label_OR_imageScale</zorder>
-       <zorder>slider_OR_polyError</zorder>
-       <zorder>label_13</zorder>
-       <zorder>label_OR_polyError</zorder>
-       <zorder>groupBox_IS</zorder>
+       <widget class="QLabel" name="label_OR_coords">
+        <property name="geometry">
+         <rect>
+          <x>730</x>
+          <y>155</y>
+          <width>111</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
       </widget>
       <widget class="QGroupBox" name="groupBox_IS">
        <property name="enabled">

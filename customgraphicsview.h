@@ -13,12 +13,16 @@ public:
 protected:
     //Take over the interaction
     virtual void wheelEvent(QWheelEvent* event);
+    virtual void mouseMoveEvent(QMouseEvent *event);
 signals:
+    void mouseMove(int x, int y);
     
 public slots:
 
 private:
     double currentZoom;
+    int imWidth;
+    int imHeight;
     
 };
 

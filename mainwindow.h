@@ -7,6 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "imagestitcher.h"
+#include "metadataparser.h"
 #include "objectrecognizer.h"
 
 namespace Ui {
@@ -47,6 +48,8 @@ private slots:
     void stitchingMatchesUpdate(StitchingMatchesUpdateData data);
     void displayProposedMatches();
     void stitchStepRunClicked();
+    void mouseMovedOnDisplay(int x, int y);
+
     
 private:
     void detectObjects();
@@ -61,6 +64,8 @@ private:
     StitchingUpdateData* lastData;
     RecognizerResults* lastResult;
     StitchingMatchesUpdateData currentMatches;
+    MetaDataParser parser;
+    MetaData currentORData;
 
 
 };

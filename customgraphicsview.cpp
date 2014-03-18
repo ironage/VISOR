@@ -20,41 +20,22 @@ CustomGraphicsView::CustomGraphicsView(QWidget* parent) : QGraphicsView(parent),
     QGraphicsScene* Scene = new QGraphicsScene(this);
     setScene(Scene);
 
-    //Populate the scene
-   /* for(int x = 0; x < 1000; x = x + 25) {
-        for(int y = 0; y < 1000; y = y + 25) {
-
-            if(x % 100 == 0 && y % 100 == 0) {
-                Scene->addRect(x, y, 2, 2);
-
-                QString pointString;
-                QTextStream stream(&pointString);
-                stream << "(" << x << "," << y << ")";
-                QGraphicsTextItem* item = Scene->addText(pointString);
-                item->setPos(x, y);
-            } else {
-                Scene->addRect(x, y, 1, 1);
-            }
-        }
-    }*/
-
-    //Set-up the view
-    //setSceneRect(0, 0, 1000, 1000);
-
     //Use ScrollHand Drag Mode to enable Panning
     setDragMode(ScrollHandDrag);
+    //Allow the mouseMoveEvent function to be called even when the mouse is not pressed.
+    setMouseTracking(true);
 }
 
 void CustomGraphicsView::setImage(QImage &image)
 {
-    int width = image.width();//geometry().width();
-    int height = image.height();//geometry().height();
+    imWidth = image.width();//geometry().width();
+    imHeight = image.height();//geometry().height();
     QPixmap pixmap = QPixmap::fromImage(image);
-    QGraphicsScene *viewScene = new QGraphicsScene(QRectF(0, 0, width, height), 0);
+    QGraphicsScene *viewScene = new QGraphicsScene(QRectF(0, 0, imWidth, imHeight), 0);
     QGraphicsPixmapItem *item = viewScene->addPixmap(pixmap.scaled(QSize(
         (int)viewScene->width(), (int)viewScene->height()),
         Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    fitInView(QRectF(0, 0, width, height),
+    fitInView(QRectF(0, 0, imWidth, imHeight),
                             Qt::KeepAspectRatio);
     if (scene() != NULL) {
         delete scene();
@@ -101,4 +82,17 @@ void CustomGraphicsView::wheelEvent(QWheelEvent* event) {
 
     // Don't call superclass handler here
     // as wheel is normally used for moving scrollbars
+}
+
+void CustomGraphicsView::mouseMoveEvent(QMouseEvent *event)
+{
+    QGraphicsView::mouseMoveEvent(event);
+    if (event) {
+        QRectF rect = sceneRect();
+
+        QPointF transformed = mapToScene(event->x(), event->y());
+        transformed.setX(transformed.x() - scene()->width() / 2);
+        transformed.setY(transformed.y() - scene()->height() / 2);
+        emit mouseMove(transformed.x(), transformed.y());
+    }
 }
