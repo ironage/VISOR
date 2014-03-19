@@ -84,7 +84,7 @@ void ImageStitcher::run() {
     }
 }
 
-std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& matches,
+std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& allMatches,
             const std::vector<KeyPoint>& keypoints_object, const std::vector<KeyPoint>& keypoints_scene,
             double angleThreshold, double distanceThreshold, double heuristicThreshold) {
     // Use only "good" matches
@@ -99,10 +99,21 @@ std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& match
     std::vector< double > angles;
     std::vector< double > lengths;
 
-    for( unsigned i = 0; i < matches.size(); i++ ) {
+    for (unsigned int i = 0; i < allMatches.size(); i++) {
         // distance is opencv score so best match is the minimum value
-        if( matches[i].distance < distanceMin ) distanceMin = matches[i].distance;
+        if( allMatches[i].distance < distanceMin ) distanceMin = allMatches[i].distance;
+    }
 
+    std::vector<DMatch> matches;
+    for (std::vector<DMatch>::const_iterator it = allMatches.begin(); it != allMatches.end(); ++it) {
+        if( it->distance > heuristicThreshold*distanceMin) {
+            // length is out of std dev range don't add to list of good values;
+            continue;
+        }
+        matches.push_back(*it);
+    }
+
+    for( unsigned i = 0; i < matches.size(); i++ ) {
         //calculate the angle of the match and store it (to save doing calculation again)
         double x1 = keypoints_object[matches[i].queryIdx].pt.x;
         double y1 = keypoints_object[matches[i].queryIdx].pt.y;
@@ -141,10 +152,6 @@ std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& match
 
     // finally prune the matches based off of stddev
     for( unsigned i = 0; i < matches.size(); i++ ) {
-        if( matches[i].distance > heuristicThreshold*distanceMin) {
-            // length is out of std dev range don't add to list of good values;
-            continue;
-        }
         if( angles[i] > angleMean + angleStdDev*angleThreshold || //*STD_DEVS_TO_KEEP ||
             angles[i] < angleMean - angleStdDev*angleThreshold ){//*STD_DEVS_TO_KEEP ) {
             // angle is out of std dev range
@@ -264,6 +271,9 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
 
     std::vector<DMatch> good_matches = pruneMatches(matches, keypoints_object, keypoints_scene,
                                        STD_ANGLE_DEVS_TO_KEEP, STD_LEN_DEVS_TO_KEEP, NUM_MIN_DIST_TO_KEEP);
+
+    std::cout << "stitcher used angle: " << STD_ANGLE_DEVS_TO_KEEP << " len: " << STD_LEN_DEVS_TO_KEEP << " heuristic: " << NUM_MIN_DIST_TO_KEEP << " matches: " << good_matches.size() << std::endl;
+
 
     // need at least 4 matches to do homography
     if( good_matches.size() < 4 ) {
