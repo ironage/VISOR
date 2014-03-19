@@ -335,7 +335,7 @@ void MainWindow::mouseMovedOnDisplay(int x, int y) {
 
         double metersPerPix = (double) currentORData.data[ALT] * atan(FOV) / ui->display->getImage().width();
 
-        double yaw    = currentORData.data[YAW] * M_PI / 180.0; // convert to radians
+        double yaw    = -1 * currentORData.data[YAW] * M_PI / 180.0; // convert to radians
         int latitude  =    cos(yaw)*x + sin(yaw)*y;
         int longitude = -1*sin(yaw)*x + cos(yaw)*y;
 
