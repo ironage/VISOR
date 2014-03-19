@@ -51,7 +51,7 @@ public:
                   bool stepModeState, QObject *parent = 0);
     void nextStep(double angle, double length, double heuristic);
     void setStepMode(bool inputStepMode);
-    static std::vector<cv::DMatch> pruneMatches(const std::vector<cv::DMatch>& matches,
+    static std::vector<cv::DMatch> pruneMatches(const std::vector<cv::DMatch>& allMatches,
                 const std::vector<cv::KeyPoint> &keypoints_object, const std::vector<cv::KeyPoint> &keypoints_scene,
                 double angleThreshold, double distanceThreshold, double heuristicThreshold);
 signals:
