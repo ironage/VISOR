@@ -328,10 +328,23 @@ void MainWindow::polyErrorChangedOR(int value) {
     detectObjects();
 }
 
+const double FOV_degrees = 40.0;
+const double FOV = FOV_degrees * M_PI / 180.0; // c libs use radians
 void MainWindow::mouseMovedOnDisplay(int x, int y) {
     if (currentORData.dataIsValid && ui->groupBox->isEnabled()) {
-        ui->label_OR_coords->setText(QString("x: ") + QString::number(x) + "\ny: " + QString::number(y));
-        //TODO: currentORData.data[LAT] + ...
+
+        double metersPerPix = (double) currentORData.data[ALT] * atan(FOV) / ui->display->getImage().width();
+
+        double yaw    = currentORData.data[YAW] * M_PI / 180.0; // convert to radians
+        int latitude  =    cos(yaw)*x + sin(yaw)*y;
+        int longitude = -1*sin(yaw)*x + cos(yaw)*y;
+
+        latitude  *= metersPerPix;
+        longitude *= metersPerPix;
+
+        ui->label_OR_coords->setText(QString("lat: ") + QString::number(latitude) + "\nlong: " + QString::number(longitude));
+        // dunno if we want both
+        //ui->label_OR_coords->setText(QString("x: ") + QString::number(x) + "\nyg: " + QString::number(y));
     }
 }
 
