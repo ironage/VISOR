@@ -64,23 +64,81 @@ void ImageStitcher::setStepMode(bool inputStepMode) {
 
 void ImageStitcher::run() {
 
-    cv::Mat result = imread(inputFiles.at(0).toStdString());
-    cv::resize(result, result, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+    //cv::Mat result = imread(inputFiles.at(0).toStdString());
+   // cv::resize(result, result, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
 
-    for (int i = 1; i < inputFiles.count(); i++ ) {
+    //todo make this a last step to add
+    int numImages = inputFiles.count();
+    int numIters = floor(log(numImages) / log(2));
+
+    cv::Mat results[numImages/2];
+
+    // get initail pairs of images
+
+    for (int i = 0; i < inputFiles.count(); i+=2 ) {
         cv::Mat object = imread( inputFiles.at(i).toStdString() );
-        cv::Mat smallObject;
+        cv::Mat scene  = imread( inputFiles.at(i+1).toStdString() );
+        cv::Mat smallObject, smallScene;
         cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
-        cv::Mat scene; result.copyTo(scene);
-        StitchingUpdateData* update = stitchImages(smallObject, scene);
+        cv::resize(scene,  smallScene,  Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+
+        StitchingUpdateData* update = stitchImages(smallObject, smallScene);
         if( !update->success ) {
             return;
         }
-        update->currentScene.copyTo(result);
+        update->currentScene.copyTo(results[i/2]);
         update->curIndex = i + 1;
-        update->totalImages = inputFiles.size();
+        update->totalImages = inputFiles.size()*2;
         emit stitchingUpdate(update);
         printf("Finished I.S. iteration %d\n", i);
+    }
+
+    if (numImages % 2 != 0) {
+         cv::Mat object = imread( inputFiles.at(numImages-1).toStdString() );
+         cv::Mat smallObject;
+         cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+         //scene = last results
+
+         StitchingUpdateData* update = stitchImages(smallObject, results[numImages/2 - 1]);
+         if( !update->success ) {
+             return;
+         }
+         update->currentScene.copyTo(results[numImages/2-1]);
+         update->curIndex = numImages + 1;
+         update->totalImages = inputFiles.size()*2;
+         emit stitchingUpdate(update);
+
+         numImages -= 1;
+    }
+
+
+    // first iteration was loading the images
+    for (int j = 1; j < numIters; j++) {
+        numImages /= 2;
+
+        for (int i = 0; i < numImages; i+=2 ) {
+            StitchingUpdateData* update = stitchImages(results[i], results[i+1]);
+            if( !update->success ) {
+                return;
+            }
+            update->currentScene.copyTo(results[i]);
+            update->curIndex = inputFiles.count() + i + 1;
+            update->totalImages = inputFiles.size()*2;
+            emit stitchingUpdate(update);
+            printf("Finished I.S. iteration %d\n", i);
+        }
+
+        if (numImages % 2 != 0) {
+             StitchingUpdateData* update = stitchImages(results[numImages/2], results[numImages/2 - 1]);
+             if( !update->success ) {
+                 return;
+             }
+             update->currentScene.copyTo(results[numImages/2-1]);
+             update->curIndex = numImages + 1;
+             update->totalImages = inputFiles.size()*2;
+             emit stitchingUpdate(update);
+             numImages -= 1;
+        }
     }
 }
 
@@ -162,7 +220,7 @@ std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& match
 }
 
 
-cv::Rect roi = cv::Rect(0, 0, 0, 0);
+//cv::Rect roi = cv::Rect(0, 0, 0, 0);
 
 // obj is the small image
 // scene is the mosiac
@@ -181,7 +239,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     cvtColor( paddedScene, grayPadded, CV_BGR2GRAY );
 
     // only look at last image for stitching
-
+    /*
     if (roi.height != 0) {
         roi.x += padding;
         roi.y += padding;
@@ -205,6 +263,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
         roi = cv::Rect(0, 0, grayPadded.cols, grayPadded.rows); // If not set then use the whole image.
     }
     Mat roiPointer = grayPadded(roi);
+    */
 
     std::vector< KeyPoint > keypoints_object, keypoints_scene;
     Mat descriptors_object, descriptors_scene;
@@ -215,18 +274,18 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
             int minHessian = 400;
             SurfFeatureDetector detector( minHessian );
             detector.detect( grayObjImage, keypoints_object );
-            detector.detect( roiPointer,   keypoints_scene );
+            detector.detect( grayPadded,   keypoints_scene );
 
             // Calculate descriptors (feature vectors)
             SurfDescriptorExtractor extractor;
             extractor.compute( grayObjImage, keypoints_object, descriptors_object );
-            extractor.compute( roiPointer,   keypoints_scene,  descriptors_scene );
+            extractor.compute( grayPadded,   keypoints_scene,  descriptors_scene );
             break;
         }
         case ImageStitcher::ORB: {
             cv::ORB orb(5000); // max features default is 500
             orb( grayObjImage, Mat(), keypoints_object, descriptors_object );
-            orb( roiPointer,   Mat(), keypoints_scene,  descriptors_scene );
+            orb( grayPadded,   Mat(), keypoints_scene,  descriptors_scene );
             break;
         }
     }
@@ -251,7 +310,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     if (stepMode) { // only emit if we are in step mode.
         StitchingMatchesUpdateData matchesUpdate;   //copy everything (no pointers here)
         grayObjImage.copyTo(matchesUpdate.object);
-        roiPointer.copyTo(matchesUpdate.scene);
+        grayPadded.copyTo(matchesUpdate.scene);
         matchesUpdate.matches = matches;
         matchesUpdate.objFeatures = keypoints_object;
         matchesUpdate.sceneFeatures = keypoints_scene;
@@ -284,7 +343,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     }
 
     Mat img_matches;
-    drawMatches( grayObjImage, keypoints_object, roiPointer, keypoints_scene,
+    drawMatches( grayObjImage, keypoints_object, grayPadded, keypoints_scene,
                  good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
                  vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
     img_matches.copyTo(updateData->currentFeatureMatches);
@@ -296,13 +355,13 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     std::cout << "Homography Mat" << std::endl << H << std::endl;
 
     // Use the Homography Matrix to warp the images
-    H.row(0).col(2) += roi.x;   // Add roi offset coordinates to translation component
-    H.row(1).col(2) += roi.y;
+    //H.row(0).col(2) += roi.x;   // Add roi offset coordinates to translation component
+   // H.row(1).col(2) += roi.y;
     Mat result;
     warpPerspective(objImage,result,H,cv::Size(paddedScene.cols,paddedScene.rows));
     // result now contains the rotated/skewed/translated object image
     // this is our ROI on the next step
-    roi = SharedFunctions::findBoundingBox(result);
+    //roi = SharedFunctions::findBoundingBox(result);
 
     //cv::rectangle(result, roi, Scalar(255, 255, 255), 3, CV_AA);
     //saveImage(result, "ROI.png");
@@ -315,8 +374,8 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     // copy that on top of the scene
     result = paddedScene;
     cv::Rect crop = SharedFunctions::findBoundingBox(result);
-    roi.x -= crop.x;
-    roi.y -= crop.y;
+    //roi.x -= crop.x;
+    //roi.y -= crop.y;
     result = result(crop);
     std::cout << "result total: " << result.total() << "\n";
     result.copyTo(updateData->currentScene);
