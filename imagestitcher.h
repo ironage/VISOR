@@ -75,6 +75,8 @@ private:
     QMutex lock;
     bool currentlyPaused;   // protected by lock
     bool stepMode;  // protected by lock
+    bool useROI;
+    cv::Rect roi;
 
     StitchingUpdateData* stitchImages(cv::Mat &objImage, cv::Mat &sceneImage);
     void pauseThreadUntilReady();

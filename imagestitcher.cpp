@@ -25,7 +25,7 @@ ImageStitcher::ImageStitcher(QStringList inputFiles,
                              double scaleFactor, double roiSize, double angleStdDevs, double lenStdDevs, double distMins,
                              ImageStitcher::FeatureDetector featureDetector, ImageStitcher::FeatcherMatcher featureMatcher,
                              bool stepModeState, QObject *parent) :
-    QThread(parent), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor), ROI_SIZE(roiSize), STD_ANGLE_DEVS_TO_KEEP(angleStdDevs),
+    QThread(parent), useROI(true), roi(cv::Rect(0, 0, 0, 0)), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor), ROI_SIZE(roiSize), STD_ANGLE_DEVS_TO_KEEP(angleStdDevs),
     STD_LEN_DEVS_TO_KEEP(lenStdDevs), NUM_MIN_DIST_TO_KEEP(distMins), F_DETECTOR(featureDetector), F_MATCHER(featureMatcher), stepMode(stepModeState)
 {
 }
@@ -168,9 +168,6 @@ std::vector<DMatch> ImageStitcher::pruneMatches(const std::vector<DMatch>& allMa
     return good_matches;
 }
 
-
-cv::Rect roi = cv::Rect(0, 0, 0, 0);
-
 // obj is the small image
 // scene is the mosiac
 StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage) {
@@ -189,7 +186,7 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
 
     // only look at last image for stitching
 
-    if (roi.height != 0) {
+    if (useROI && roi.height != 0) {
         roi.x += padding;
         roi.y += padding;
 
