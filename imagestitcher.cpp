@@ -24,9 +24,9 @@ StitchingUpdateData::StitchingUpdateData() : QObject(NULL)
 ImageStitcher::ImageStitcher(QStringList inputFiles,
                              double scaleFactor, double roiSize, double angleStdDevs, double lenStdDevs, double distMins,
                              ImageStitcher::FeatureDetector featureDetector, ImageStitcher::FeatcherMatcher featureMatcher,
-                             bool stepModeState, QObject *parent) :
+                             bool stepModeState, AlgorithmType type, QObject *parent) :
     QThread(parent), useROI(true), roi(cv::Rect(0, 0, 0, 0)), inputFiles(inputFiles), SCALE_FACTOR(scaleFactor), ROI_SIZE(roiSize), STD_ANGLE_DEVS_TO_KEEP(angleStdDevs),
-    STD_LEN_DEVS_TO_KEEP(lenStdDevs), NUM_MIN_DIST_TO_KEEP(distMins), F_DETECTOR(featureDetector), F_MATCHER(featureMatcher), stepMode(stepModeState)
+    STD_LEN_DEVS_TO_KEEP(lenStdDevs), NUM_MIN_DIST_TO_KEEP(distMins), F_DETECTOR(featureDetector), F_MATCHER(featureMatcher), stepMode(stepModeState), algorithm(type)
 {
 }
 
@@ -64,23 +64,97 @@ void ImageStitcher::setStepMode(bool inputStepMode) {
 
 void ImageStitcher::run() {
 
-    cv::Mat result = imread(inputFiles.at(0).toStdString());
-    cv::resize(result, result, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+    if (algorithm == ImageStitcher::CUMULATIVE) {
+        cv::Mat result = imread(inputFiles.at(0).toStdString());
+        cv::resize(result, result, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+        useROI = true;
 
-    for (int i = 1; i < inputFiles.count(); i++ ) {
-        cv::Mat object = imread( inputFiles.at(i).toStdString() );
-        cv::Mat smallObject;
-        cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
-        cv::Mat scene; result.copyTo(scene);
-        StitchingUpdateData* update = stitchImages(smallObject, scene);
-        if( !update->success ) {
-            return;
+        for (int i = 1; i < inputFiles.count(); i++ ) {
+            cv::Mat object = imread( inputFiles.at(i).toStdString() );
+            cv::Mat smallObject;
+            cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+            cv::Mat scene; result.copyTo(scene);
+            StitchingUpdateData* update = stitchImages(smallObject, scene);
+            if( !update->success ) {
+                return;
+            }
+            update->currentScene.copyTo(result);
+            update->curIndex = i + 1;
+            update->totalImages = inputFiles.size();
+            emit stitchingUpdate(update);
+            printf("Finished I.S. iteration %d\n", i);
         }
-        update->currentScene.copyTo(result);
-        update->curIndex = i + 1;
-        update->totalImages = inputFiles.size();
-        emit stitchingUpdate(update);
-        printf("Finished I.S. iteration %d\n", i);
+    } else if (algorithm == ImageStitcher::COMPOUND_HOMOGRAPHY) {
+
+        cv::Mat lastObjectBig = imread(inputFiles.at(0).toStdString());
+        cv::Mat lastObject;
+        cv::resize(lastObjectBig, lastObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+        useROI = false;
+        cv::Mat lastHomography = cv::Mat::eye(cv::Size(3,3), CV_64FC1); // start with the 3x3 Identity matrix
+        cv::Mat scene;
+        lastObject.copyTo(scene);
+
+        for (int i = 1; i < inputFiles.count(); i++) {
+            cv::Mat object = imread( inputFiles.at(i).toStdString() );
+            cv::Mat smallObject;
+            cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+            StitchingUpdateData* update = stitchImages(smallObject, lastObject);
+            if( !update->success ) {
+                return;
+            }
+
+            // Pad the sceen to have sapce for the new obj
+            int padding = std::max(smallObject.cols, smallObject.rows)/2;
+            Mat paddedScene;
+            copyMakeBorder(scene, paddedScene, padding, padding, padding, padding, BORDER_CONSTANT, 0 );
+
+            Mat translate = Mat::eye(3, 3, CV_64FC1);
+            translate.row(0).col(2) = padding;   // Add padding offset coordinates to translation component
+            translate.row(1).col(2) = padding;
+
+            //std::cout << "padding" << padding << std::endl;
+            //std::cout << "last homography before " << std::endl << lastHomography << std::endl;
+            //lastHomography.at<double>(0,2) += padding;
+            //lastHomography.at<double>(1,2) += padding;
+            //std::cout << "last homography after " << std::endl << lastHomography << std::endl;
+
+            Mat combinedHomography = translate * lastHomography * update->homography;
+            //combinedHomography.at<double>(0,2) += padding;
+            //combinedHomography.at<double>(1,2) += padding;
+
+            Mat warpedObject;
+            warpPerspective(smallObject,warpedObject,combinedHomography,cv::Size(paddedScene.cols,paddedScene.rows));
+
+            // Find the non zero parts of the warped image
+            cv::Mat mask = warpedObject > 0;
+            warpedObject.copyTo(paddedScene,mask);
+            cv::Rect crop = SharedFunctions::findBoundingBox(paddedScene);
+            paddedScene = paddedScene(crop);
+
+            paddedScene.copyTo(update->currentScene);
+            scene = paddedScene;
+            update->curIndex = i + 1;
+            update->totalImages = inputFiles.size();
+            emit stitchingUpdate(update);
+
+            //double xOffset = update->homography.at<double>(0,2);
+            //double yOffset = update->homography.at<double>(1,2);
+
+            lastObject = smallObject;
+
+            //lastHomography = combinedHomography;
+
+            //lastHomography.at<double>(0,2) += xOffset;
+            //lastHomography.at<double>(1,2) += yOffset; //row(1).col(2) += yOffset;
+            translate.row(0).col(2) = -1*crop.x;   // Add padding offset coordinates to translation component
+            translate.row(1).col(2) = -1*crop.y;
+            combinedHomography = translate * combinedHomography;
+
+            combinedHomography.copyTo(lastHomography);
+
+            printf("Finished I.S. iteration %d\n", i);
+
+        }
     }
 }
 
@@ -177,8 +251,11 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     int padding = std::max(objImage.cols, objImage.rows)/2;
     printf("max padding is %d\n", padding);
     Mat paddedScene;
-    copyMakeBorder( sceneImage, paddedScene, padding, padding, padding, padding, BORDER_CONSTANT, 0 );
-
+    if (algorithm == ImageStitcher::COMPOUND_HOMOGRAPHY) {
+        sceneImage.copyTo(paddedScene);
+    } else {
+        copyMakeBorder( sceneImage, paddedScene, padding, padding, padding, padding, BORDER_CONSTANT, 0 );
+    }
     // Convert imagages to gray scale to be used with openCV's detection features
     Mat grayObjImage, grayPadded;
     cvtColor( objImage,    grayObjImage, CV_BGR2GRAY );
@@ -303,8 +380,18 @@ StitchingUpdateData* ImageStitcher::stitchImages(Mat &objImage, Mat &sceneImage)
     std::cout << "Homography Mat" << std::endl << H << std::endl;
 
     // Use the Homography Matrix to warp the images
-    H.row(0).col(2) += roi.x;   // Add roi offset coordinates to translation component
-    H.row(1).col(2) += roi.y;
+    Mat translate = Mat::eye(3,3, CV_64FC1);
+    translate.at<double>(0,2) = roi.x;
+    translate.at<double>(1,2) = roi.y;
+    H = translate * H;
+    //H.row(0).col(2) += roi.x;   // Add roi offset coordinates to translation component
+    //H.row(1).col(2) += roi.y;
+
+    H.copyTo(updateData->homography);
+    if (algorithm == ImageStitcher::COMPOUND_HOMOGRAPHY) {
+        return updateData;
+    }
+
     Mat result;
     warpPerspective(objImage,result,H,cv::Size(paddedScene.cols,paddedScene.rows));
     // result now contains the rotated/skewed/translated object image
