@@ -135,8 +135,6 @@ void MainWindow::displayRecognitionResult() {
     } else if (ui->radio_or_hough->isChecked()) {
         displayImage(lastResult->hough);
     } else if (ui->radio_or_input->isChecked()) {
-        displayImage(lastResult->hough);
-    } else if (ui->radio_or_input->isChecked()) {
         displayImage(lastResult->input);
     } else if (ui->radio_or_output->isChecked()) {
         displayImage(lastResult->output);
@@ -335,14 +333,28 @@ void MainWindow::mouseMovedOnDisplay(int x, int y) {
 
         double metersPerPix = (double) currentORData.data[ALT] * atan(FOV) / ui->display->getImage().width();
 
-        double yaw    = -1 * currentORData.data[YAW] * M_PI / 180.0; // convert to radians
-        int latitude  =    cos(yaw)*x + sin(yaw)*y;
-        int longitude = -1*sin(yaw)*x + cos(yaw)*y;
+        double yaw     = -1 * currentORData.data[YAW] * M_PI / 180.0; // convert to radians
+        double offsetX =    cos(yaw)*x + sin(yaw)*y;
+        double offsetY = -1*sin(yaw)*x + cos(yaw)*y;
 
-        latitude  *= metersPerPix;
-        longitude *= metersPerPix;
+        // offsets in meters
+        offsetX *= metersPerPix;
+        offsetY *= metersPerPix;
 
-        ui->label_OR_coords->setText(QString("lat: ") + QString::number(latitude) + "\nlong: " + QString::number(longitude));
+        //Earth’s radius
+        int R = 6378137;
+
+        // delta lat/long in radians
+        double dLat = (double) offsetY/R;
+        double dLon = (double) offsetX/(R*cos(M_PI*currentORData.data[LAT]/180.0));
+
+        //OffsetPosition, decimal degrees
+        double latitude  = currentORData.data[LAT] + dLat * 180.0/M_PI;
+        double longitude = currentORData.data[LON] + dLon * 180.0/M_PI;
+
+        QLocale c(QLocale::C);
+
+        ui->label_OR_coords->setText(QString("lat: ") + c.toString(latitude, 'f', 9) + "\nlong: " + c.toString(longitude, 'f', 9));
         // dunno if we want both
         //ui->label_OR_coords->setText(QString("x: ") + QString::number(x) + "\nyg: " + QString::number(y));
     }

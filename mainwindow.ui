@@ -641,9 +641,9 @@
        <widget class="QLabel" name="label_OR_coords">
         <property name="geometry">
          <rect>
-          <x>730</x>
+          <x>670</x>
           <y>155</y>
-          <width>111</width>
+          <width>206</width>
           <height>41</height>
          </rect>
         </property>
