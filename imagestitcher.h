@@ -15,6 +15,7 @@ public:
     StitchingUpdateData();
     cv::Mat currentScene;
     cv::Mat currentFeatureMatches;
+    cv::Mat homography;
     int curIndex;
     int totalImages;
     bool success;
@@ -45,10 +46,15 @@ public:
         BRUTE_FORCE
     };
 
+    enum AlgorithmType {
+        CUMULATIVE,
+        COMPOUND_HOMOGRAPHY
+    };
+
     ImageStitcher(QStringList inputFiles,
                   double scaleFactor, double roiSize, double angleStdDevs, double lenStdDevs, double distMins,
                   ImageStitcher::FeatureDetector featureDetector, ImageStitcher::FeatcherMatcher featureMatcher,
-                  bool stepModeState, QObject *parent = 0);
+                  bool stepModeState, AlgorithmType type, QObject *parent = 0);
     void nextStep(double angle, double length, double heuristic);
     void setStepMode(bool inputStepMode);
     static std::vector<cv::DMatch> pruneMatches(const std::vector<cv::DMatch>& allMatches,
@@ -77,6 +83,7 @@ private:
     bool stepMode;  // protected by lock
     bool useROI;
     cv::Rect roi;
+    AlgorithmType algorithm;
 
     StitchingUpdateData* stitchImages(cv::Mat &objImage, cv::Mat &sceneImage);
     void pauseThreadUntilReady();
