@@ -48,7 +48,9 @@ public:
 
     enum AlgorithmType {
         CUMULATIVE,
-        COMPOUND_HOMOGRAPHY
+        COMPOUND_HOMOGRAPHY,
+        REDUCE,
+        FULL_MATCHES
     };
 
     ImageStitcher(QStringList inputFiles,

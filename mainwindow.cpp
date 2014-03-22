@@ -235,7 +235,7 @@ void MainWindow::startImageStitchingClicked() {
     double lengthParam = ui->slider_IS_length->getCurrentCustomValue();
     double heuristicParam = ui->slider_IS_heuristic->getCurrentCustomValue();
     bool stepMode = ui->radio_IS_step->isChecked();
-    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.25, angleParam, lengthParam, heuristicParam, ImageStitcher::SURF, ImageStitcher::BRUTE_FORCE, stepMode, ImageStitcher::CUMULATIVE);
+    stitcher = new ImageStitcher(inputFiles, ui->slider_IS_resize->value() / 100.0, 1.25, angleParam, lengthParam, heuristicParam, ImageStitcher::SURF, ImageStitcher::BRUTE_FORCE, stepMode, ImageStitcher::REDUCE);
     connect(stitcher, SIGNAL(stitchingUpdate(StitchingUpdateData*)), this, SLOT(stitchingUpdate(StitchingUpdateData*)), Qt::QueuedConnection);
     connect(stitcher, SIGNAL(stitchingUpdateMatches(StitchingMatchesUpdateData)), this, SLOT(stitchingMatchesUpdate(StitchingMatchesUpdateData)));
     stitcher->start();

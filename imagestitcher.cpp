@@ -155,6 +155,86 @@ void ImageStitcher::run() {
             printf("Finished I.S. iteration %d\n", i);
 
         }
+    } else if (algorithm == ImageStitcher::REDUCE) {
+        //todo make this a last step to add
+        int numImagesProcessed = 0;
+        int numImages = inputFiles.count();
+        int numIters = ceil(log(numImages) / log(2));
+        useROI = false;
+
+        cv::Mat results[numImages/2];
+
+        // get initail pairs of images
+
+        for (int i = 0; i < inputFiles.count(); i+=2 ) {
+            numImagesProcessed++;
+            cv::Mat object = imread( inputFiles.at(i).toStdString() );
+            cv::Mat scene  = imread( inputFiles.at(i+1).toStdString() );
+            cv::Mat smallObject, smallScene;
+            cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+            cv::resize(scene,  smallScene,  Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+
+            StitchingUpdateData* update = stitchImages(smallObject, smallScene);
+            if( !update->success ) {
+                return;
+            }
+            update->currentScene.copyTo(results[i/2]);
+            update->curIndex = numImagesProcessed;
+            update->totalImages = inputFiles.size() - 1;
+            emit stitchingUpdate(update);
+            printf("Finished I.S. iteration %d\n", i);
+        }
+
+        if (numImages % 2 != 0) {
+             numImagesProcessed++;
+             cv::Mat object = imread( inputFiles.at(numImages-1).toStdString() );
+             cv::Mat smallObject;
+             cv::resize(object, smallObject, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
+             //scene = last results
+
+             StitchingUpdateData* update = stitchImages(smallObject, results[numImages/2 - 1]);
+             if( !update->success ) {
+                 return;
+             }
+             update->currentScene.copyTo(results[numImages/2-1]);
+             update->curIndex = numImagesProcessed;
+             update->totalImages = inputFiles.size() - 1;
+             emit stitchingUpdate(update);
+
+             numImages -= 1;
+        }
+
+
+        // first iteration was loading the images
+        for (int j = 1; j < numIters; j++) {
+            numImages /= 2;
+
+            for (int i = 0; i < numImages; i+=2 ) {
+                numImagesProcessed++;
+                StitchingUpdateData* update = stitchImages(results[i], results[i+1]);
+                if( !update->success ) {
+                    return;
+                }
+                update->currentScene.copyTo(results[i/2]);
+                update->curIndex = numImagesProcessed;
+                update->totalImages = inputFiles.size() - 1;
+                emit stitchingUpdate(update);
+                printf("Finished I.S. iteration %d\n", i);
+            }
+
+            if (numImages % 2 != 0) {
+                numImagesProcessed++;
+                 StitchingUpdateData* update = stitchImages(results[numImages/2], results[numImages/2 - 1]);
+                 if( !update->success ) {
+                     return;
+                 }
+                 update->currentScene.copyTo(results[numImages/2-1]);
+                 update->curIndex = numImagesProcessed;
+                 update->totalImages = inputFiles.size() - 1;
+                 emit stitchingUpdate(update);
+                 numImages -= 1;
+            }
+        }
     }
 }
 
