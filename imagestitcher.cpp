@@ -64,10 +64,14 @@ void ImageStitcher::setStepMode(bool inputStepMode) {
 
 void ImageStitcher::run() {
 
-    if (algorithm == ImageStitcher::CUMULATIVE) {
+    if (algorithm == ImageStitcher::CUMULATIVE || algorithm == ImageStitcher::FULL_MATCHES) {
         cv::Mat result = imread(inputFiles.at(0).toStdString());
         cv::resize(result, result, Size(), SCALE_FACTOR, SCALE_FACTOR, INTER_AREA);
-        useROI = true;
+        if (algorithm == ImageStitcher::CUMULATIVE) {
+            useROI = true;
+        } else {
+            useROI = false;
+        }
 
         for (int i = 1; i < inputFiles.count(); i++ ) {
             cv::Mat object = imread( inputFiles.at(i).toStdString() );

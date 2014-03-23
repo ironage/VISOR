@@ -1046,9 +1046,78 @@
          </property>
         </widget>
        </widget>
+       <widget class="QFrame" name="frame_3">
+        <property name="geometry">
+         <rect>
+          <x>680</x>
+          <y>15</y>
+          <width>206</width>
+          <height>126</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QRadioButton" name="radio_IS_wholeImageMatching">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>10</y>
+           <width>181</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Whole Image Matching</string>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radio_IS_ROI">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>35</y>
+           <width>181</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Region of Interest</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radio_IS_compoundHomography">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>60</y>
+           <width>191</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Compound Homography</string>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radio_IS_reduce">
+         <property name="geometry">
+          <rect>
+           <x>5</x>
+           <y>85</y>
+           <width>116</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Reduce</string>
+         </property>
+        </widget>
+       </widget>
       </widget>
-      <zorder>groupBox_IS</zorder>
-      <zorder>groupBox</zorder>
      </widget>
     </item>
     <item>
