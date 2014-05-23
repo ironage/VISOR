@@ -1,0 +1,49 @@
+CXX = g++
+
+CXXFLAGS = -g -O -std=c++0x
+
+INCLUDE_DIR = ./include/
+OUTPUT_DIR = ./bin/
+LIB_DIR = ./lib/
+
+all: OR IS
+
+sharedfunctions.o: sharedfunctions.cpp
+	$(CXX) $(CXXFLAGS) -I $(INCLUDE_DIR) -c $^
+
+objectrecognizer.o: objectrecognizer.cpp
+	$(CXX) $(CXXFLAGS) -I $(INCLUDE_DIR) -c $^
+
+OR: mainOR.cpp objectrecognizer.o sharedfunctions.o
+	$(CXX) $(CXXFLAGS) -I $(INCLUDE_DIR) -L $(LIB_DIR) -o $(OUTPUT_DIR)$@ $^ `pkg-config opencv --libs`
+
+.FORCE: 
+
+ISMakefile: .FORCE
+	`qmake-qt4 IS.pro -r -o ISMakefile -spec linux-g++`
+
+imagestitcher.o: imagestitcher.cpp
+	$(CXX) $(CXXFLAGS) -I $(INCLUDE_DIR) -c $^
+
+IS: ISMakefile imagestitcher.o sharedfunctions.o
+	`make -f ISMakefile`
+
+#-lopencv_core -lopencv_imgproc -lopencv_highgui
+
+array1cmp: $(SPL_TOPDIR)/share/SPL/demo/array1cmp.cpp
+	$(CXX) $(CXXFLAGS) -I $(SPL_TOPDIR)/include -L $(SPL_TOPDIR)/lib -o $@ $^ -lSPL -lsndfile
+
+filterDesignDemo: $(SPL_TOPDIR)/share/SPL/demo/filterDesignDemo.cpp
+	$(CXX) $(CXXFLAGS) -I $(SPL_TOPDIR)/include -L $(SPL_TOPDIR)/lib -o $@ $^ -lSPL -lsndfile
+
+makeAudio: $(SPL_TOPDIR)/share/SPL/demo/makeAudio.cpp
+	$(CXX) $(CXXFLAGS) -I $(SPL_TOPDIR)/include -L $(SPL_TOPDIR)/lib -o $@ $^ -lSPL -lsndfile
+
+timerDemo: $(SPL_TOPDIR)/share/SPL/demo/timerDemo.cpp
+	$(CXX) $(CXXFLAGS) -I $(SPL_TOPDIR)/include -L $(SPL_TOPDIR)/lib -o $@ $^ -lSPL -lsndfile
+
+clean:
+	rm -f $(OUTPUT_DIR)OR $(OUTPUT_DIR)*.o 
+
+.PHONY: all clean
+

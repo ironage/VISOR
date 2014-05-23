@@ -1,0 +1,11 @@
+{ "shape" : "undetermined", "primaryColour" : "warm yellow", "secondaryColour" : "orange","area" : "0.355064","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "pentagon", "primaryColour" : "orange", "secondaryColour" : "warm red","area" : "0.516134","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "quadrilateral", "primaryColour" : "blue", "secondaryColour" : "cool blue","area" : "0.564987","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "quadrilateral", "primaryColour" : "orange", "secondaryColour" : "blue cyan","area" : "0.0592068","targetLatitude" : "49.9029","targetLongitude" : "98.2741","objectType" : "unknown" }
+{ "shape" : "hexagon", "primaryColour" : "cool cyan", "secondaryColour" : "yellow","area" : "0.372941","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "triangle", "primaryColour" : "yellow green", "secondaryColour" : "yellow","area" : "0.575253","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "triangle", "primaryColour" : "orange", "secondaryColour" : "blue cyan","area" : "0.130981","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "pentagon", "primaryColour" : "warm red", "secondaryColour" : "warm red","area" : "0.0397367","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "pentagon", "primaryColour" : "yellow", "secondaryColour" : "warm yellow","area" : "0.0183196","targetLatitude" : "49.9029","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "pentagon", "primaryColour" : "red magenta", "secondaryColour" : "cool red","area" : "0.0207091","targetLatitude" : "49.9029","targetLongitude" : "98.274","objectType" : "unknown" }
+{ "shape" : "pentagon", "primaryColour" : "orange", "secondaryColour" : "yellow","area" : "0.0252226","targetLatitude" : "49.903","targetLongitude" : "98.274","objectType" : "unknown" }

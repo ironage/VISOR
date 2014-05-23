@@ -1,0 +1,3 @@
+imagename, lat, lon, altitude, yaw
+"targets_01.jpg", 49.903056, 98.273889, 372, 300
+"targets_02.jpg", 49.9125, 98.267222, 380, 270
