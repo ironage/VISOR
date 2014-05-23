@@ -12,8 +12,8 @@ SharedFunctions::SharedFunctions()
 void SharedFunctions::setLabel(cv::Mat& im, const std::string label, std::vector<cv::Point>& contour)
 {
     int fontface = cv::FONT_HERSHEY_SIMPLEX;
-    double scale = 0.4;
-    int thickness = 1;
+    double scale = 1;
+    int thickness = 3;
     int baseline = 0;
 
     cv::Size text = cv::getTextSize(label, fontface, scale, thickness, &baseline);
@@ -29,10 +29,10 @@ void SharedFunctions::drawPolygon(cv::Mat& image, std::vector<cv::Point> points)
 
     for(unsigned int i=0; i<points.size(); i++){
         if(i==points.size()-1){
-            cv::line(image, points[0],points[points.size()-1], cv::Scalar(255,0,0), 5, 8, 0);
+            cv::line(image, points[0],points[points.size()-1], cv::Scalar(0,0,255), 5, 8, 0);
         }
         else{
-            cv::line(image, points[i],points[i+1], cv::Scalar(255,0,0), 3, CV_AA);
+            cv::line(image, points[i],points[i+1], cv::Scalar(0,0,255), 3, CV_AA);
         }
     }
 }
